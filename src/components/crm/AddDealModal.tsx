@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Deal, Company, Contact, Manager, Course, stages, sourceOptions, segmentOptions, regionOptions } from '@/data/crm';
 import Icon from '@/components/ui/icon';
 
@@ -136,6 +136,45 @@ function QuickContactForm({ companyId, onCreate, onToggle }: {
   );
 }
 
+// ─── Courses dropdown ─────────────────────────────────────────────────────
+function CoursesDropdown({ courses, selected, onToggle }: {
+  courses: Course[]; selected: string[]; onToggle: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  const names = courses.filter(c => selected.includes(c.id)).map(c => c.name);
+  const inp = "w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 transition-colors bg-white";
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(p => !p)}
+        className={`${inp} flex items-center justify-between text-left`}>
+        <span className={names.length ? 'text-slate-800' : 'text-slate-400'}>
+          {names.length ? names.join(', ') : 'Выбрать курсы...'}
+        </span>
+        <Icon name={open ? 'ChevronUp' : 'ChevronDown'} size={13} className="text-slate-400 flex-shrink-0 ml-2" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+          {courses.map(c => (
+            <div key={c.id} onClick={() => onToggle(c.id)}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer">
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selected.includes(c.id) ? 'bg-slate-900 border-slate-900' : 'border-slate-300'}`}>
+                {selected.includes(c.id) && <Icon name="Check" size={10} className="text-white" />}
+              </div>
+              <span className="text-sm text-slate-700">{c.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main modal ───────────────────────────────────────────────────────────
 export default function AddDealModal({ defaultStageId, companies, contacts, managers, courses, onClose, onAdd, onAddCompany, onAddContact }: AddDealModalProps) {
   const [form, setForm] = useState({
@@ -162,6 +201,8 @@ export default function AddDealModal({ defaultStageId, companies, contacts, mana
     set('courseIds', form.courseIds.includes(id) ? form.courseIds.filter(c => c !== id) : [...form.courseIds, id]);
   const toggleContact = (id: string) =>
     set('contactIds', form.contactIds.includes(id) ? form.contactIds.filter(c => c !== id) : [...form.contactIds, id]);
+
+  const [localCourses, setLocalCourses] = useState(courses);
 
   // Local contacts updated when new contact created
   const [localContacts, setLocalContacts] = useState(contacts);
@@ -247,14 +288,7 @@ export default function AddDealModal({ defaultStageId, companies, contacts, mana
 
             <div>
               <label className={lbl}>Курсы</label>
-              <div className="flex flex-wrap gap-1.5">
-                {courses.map(c => (
-                  <button key={c.id} type="button" onClick={() => toggleCourse(c.id)}
-                    className={`text-xs px-2.5 py-1 rounded border transition-colors ${form.courseIds.includes(c.id) ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}>
-                    {c.name}
-                  </button>
-                ))}
-              </div>
+              <CoursesDropdown courses={localCourses} selected={form.courseIds} onToggle={toggleCourse} />
             </div>
 
             <div className="grid grid-cols-3 gap-3">

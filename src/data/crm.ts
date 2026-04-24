@@ -2,16 +2,17 @@
 export type Stage = { id: string; name: string; color: string };
 
 export const stages: Stage[] = [
-  { id: 'base',            name: 'База',                 color: '#cbd5e1' },
-  { id: 'new_lead',        name: 'Новый лид',            color: '#93c5fd' },
-  { id: 'no_answer',       name: 'Недозвон',             color: '#fca5a5' },
-  { id: 'in_work',         name: 'Взято в работу',       color: '#86efac' },
-  { id: 'qualify',         name: 'Квалификация',          color: '#fcd34d' },
-  { id: 'negotiate',       name: 'Переговоры',           color: '#f9a8d4' },
-  { id: 'contract_sent',   name: 'Договор отправлен',    color: '#a5b4fc' },
-  { id: 'contract_signed', name: 'Договор подписан',     color: '#6ee7b7' },
-  { id: 'invoice_sent',    name: 'Счет отправлен',       color: '#fde68a' },
-  { id: 'done',            name: 'Успешно реализовано',  color: '#4ade80' },
+  { id: 'base',            name: 'База',                      color: '#cbd5e1' },
+  { id: 'new_lead',        name: 'Новый лид',                 color: '#93c5fd' },
+  { id: 'no_answer',       name: 'Недозвон',                  color: '#fca5a5' },
+  { id: 'in_work',         name: 'Взято в работу',            color: '#86efac' },
+  { id: 'qualify',         name: 'Квалификация',               color: '#fcd34d' },
+  { id: 'negotiate',       name: 'Переговоры',                color: '#f9a8d4' },
+  { id: 'contract_sent',   name: 'Договор отправлен',         color: '#a5b4fc' },
+  { id: 'contract_signed', name: 'Договор подписан',          color: '#6ee7b7' },
+  { id: 'invoice_sent',    name: 'Счет отправлен',            color: '#fde68a' },
+  { id: 'done',            name: 'Успешно реализовано',       color: '#4ade80' },
+  { id: 'lost',            name: 'Закрыто и нереализовано',   color: '#fda4af' },
 ];
 
 // ─── Course ────────────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ export type Deal = {
   history: HistoryItem[];
   createdAt: string;
   tags: string[];
+  lostReason?: string;
 };
 
 // ─── Seed: courses ─────────────────────────────────────────────────────────

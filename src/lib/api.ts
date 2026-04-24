@@ -23,14 +23,17 @@ export const api = {
   getDeals: () => request<unknown[]>('deals'),
   addDeal: (d: unknown) => request('deals', 'POST', d),
   updateDeal: (id: string, d: unknown) => request('deals', 'PUT', d, id),
+  deleteDeal: (id: string) => request('deals', 'DELETE', undefined, id),
 
   getCompanies: () => request<unknown[]>('companies'),
   addCompany: (d: unknown) => request('companies', 'POST', d),
   updateCompany: (id: string, d: unknown) => request('companies', 'PUT', d, id),
+  deleteCompany: (id: string) => request('companies', 'DELETE', undefined, id),
 
   getContacts: () => request<unknown[]>('contacts'),
   addContact: (d: unknown) => request('contacts', 'POST', d),
   updateContact: (id: string, d: unknown) => request('contacts', 'PUT', d, id),
+  deleteContact: (id: string) => request('contacts', 'DELETE', undefined, id),
 
   getCourses: () => request<unknown[]>('courses'),
   addCourse: (d: unknown) => request('courses', 'POST', d),
@@ -38,6 +41,8 @@ export const api = {
 
   getManagers: () => request<unknown[]>('managers'),
   addManager: (d: unknown) => request('managers', 'POST', d),
+  updateManager: (id: string, d: unknown) => request('managers', 'PUT', d, id),
+  deleteManager: (id: string) => request('managers', 'DELETE', undefined, id),
 
   exportCsv: () => request<string>('export'),
   importCsv: (csv: string) => request<{ imported: number }>('import', 'POST', { csv }),

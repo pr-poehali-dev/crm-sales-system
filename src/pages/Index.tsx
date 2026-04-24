@@ -12,9 +12,10 @@ import AddDealModal from '@/components/crm/AddDealModal';
 import CompaniesView from '@/components/crm/CompaniesView';
 import ContactsView from '@/components/crm/ContactsView';
 import TasksView from '@/components/crm/TasksView';
+import ManagersView from '@/components/crm/ManagersView';
 import Icon from '@/components/ui/icon';
 
-type View = 'funnel' | 'deals' | 'tasks' | 'companies' | 'contacts';
+type View = 'funnel' | 'deals' | 'tasks' | 'companies' | 'contacts' | 'managers';
 
 export default function Index() {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -108,6 +109,41 @@ export default function Index() {
     await api.updateCourse(updated.id, updated);
   };
 
+  // ─── Delete handlers ────────────────────────────────────────────────────
+  const handleDeleteDeal = async (id: string) => {
+    setDeals(prev => prev.filter(d => d.id !== id));
+    if (selectedDeal?.id === id) setSelectedDeal(null);
+    await api.deleteDeal(id);
+  };
+
+  const handleDeleteCompany = async (id: string) => {
+    setCompanies(prev => prev.filter(c => c.id !== id));
+    await api.deleteCompany(id);
+  };
+
+  const handleDeleteContact = async (id: string) => {
+    setContacts(prev => prev.filter(c => c.id !== id));
+    await api.deleteContact(id);
+  };
+
+  // ─── Manager handlers ───────────────────────────────────────────────────
+  const handleAddManager = async (name: string): Promise<Manager> => {
+    const m: Manager = { id: `m${Date.now()}`, name };
+    setManagers(prev => [...prev, m]);
+    await api.addManager(m);
+    return m;
+  };
+
+  const handleUpdateManager = async (updated: Manager) => {
+    setManagers(prev => prev.map(m => m.id === updated.id ? updated : m));
+    await api.updateManager(updated.id, updated);
+  };
+
+  const handleDeleteManager = async (id: string) => {
+    setManagers(prev => prev.filter(m => m.id !== id));
+    await api.deleteManager(id);
+  };
+
   const handleExport = async () => {
     const csv = await api.exportCsv();
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -144,11 +180,12 @@ export default function Index() {
   };
 
   const navItems: { id: View; label: string; icon: string }[] = [
-    { id: 'funnel',    label: 'Воронка',  icon: 'Columns3'    },
-    { id: 'deals',     label: 'Сделки',   icon: 'Briefcase'   },
-    { id: 'tasks',     label: 'Задачи',   icon: 'CheckSquare' },
-    { id: 'companies', label: 'Компании', icon: 'Building2'   },
-    { id: 'contacts',  label: 'Контакты', icon: 'Users'       },
+    { id: 'funnel',    label: 'Воронка',   icon: 'Columns3'    },
+    { id: 'deals',     label: 'Сделки',    icon: 'Briefcase'   },
+    { id: 'tasks',     label: 'Задачи',    icon: 'CheckSquare' },
+    { id: 'companies', label: 'Компании',  icon: 'Building2'   },
+    { id: 'contacts',  label: 'Контакты',  icon: 'Users'       },
+    { id: 'managers',  label: 'Менеджеры', icon: 'UserCog'     },
   ];
 
   if (loading) {
@@ -286,11 +323,17 @@ export default function Index() {
         )}
         {view === 'companies' && (
           <CompaniesView companies={companies} contacts={contacts} deals={deals} searchQuery={searchQuery}
-            onAddCompany={d => { handleAddCompany(d); }} onEditCompany={handleEditCompany} />
+            onAddCompany={d => { handleAddCompany(d); }} onEditCompany={handleEditCompany}
+            onDeleteCompany={handleDeleteCompany} />
         )}
         {view === 'contacts' && (
           <ContactsView contacts={contacts} companies={companies} deals={deals} searchQuery={searchQuery}
-            onAddContact={d => { handleAddContact(d); }} onEditContact={handleEditContact} />
+            onAddContact={d => { handleAddContact(d); }} onEditContact={handleEditContact}
+            onDeleteContact={handleDeleteContact} />
+        )}
+        {view === 'managers' && (
+          <ManagersView managers={managers} deals={deals}
+            onAdd={handleAddManager} onUpdate={handleUpdateManager} onDelete={handleDeleteManager} />
         )}
       </main>
 
@@ -299,6 +342,7 @@ export default function Index() {
           deal={selectedDeal} companies={companies} contacts={contacts} managers={managers} courses={courses}
           onClose={() => setSelectedDeal(null)}
           onUpdate={handleUpdateDeal}
+          onDelete={handleDeleteDeal}
           onUpdateCompany={handleEditCompany}
           onUpdateContact={handleEditContact}
           onAddCompany={handleAddCompany}

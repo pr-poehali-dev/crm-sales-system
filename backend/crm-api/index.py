@@ -164,6 +164,11 @@ def handler(event: dict, context) -> dict:
                 exe(cur, f"UPDATE {S}.companies SET name=%s,legal_entities=%s,segment=%s,region=%s,city=%s WHERE id=%s",
                     (d["name"],json.dumps(d.get("legalEntities",[])),d.get("segment",""),d.get("region",""),d.get("city",""),row_id))
                 return ok({"ok": True})
+            if method == "DELETE" and row_id:
+                exe(cur, f"UPDATE {S}.deals SET company_id=NULL WHERE company_id=%s", (row_id,))
+                exe(cur, f"UPDATE {S}.contacts SET company_id=NULL WHERE company_id=%s", (row_id,))
+                exe(cur, f"DELETE FROM {S}.companies WHERE id=%s", (row_id,))
+                return ok({"ok": True})
 
         # ── CONTACTS ─────────────────────────────────────────────────────────
         if entity == "contacts":
@@ -183,6 +188,9 @@ def handler(event: dict, context) -> dict:
                 exe(cur, f"UPDATE {S}.contacts SET full_name=%s,phones=%s,emails=%s,position=%s,is_decision_maker=%s,company_id=%s WHERE id=%s",
                     (d["fullName"],json.dumps(d.get("phones",[])),json.dumps(d.get("emails",[])),
                      d.get("position",""),d.get("isDecisionMaker",False),d.get("companyId") or None,row_id))
+                return ok({"ok": True})
+            if method == "DELETE" and row_id:
+                exe(cur, f"DELETE FROM {S}.contacts WHERE id=%s", (row_id,))
                 return ok({"ok": True})
 
         # ── COURSES ──────────────────────────────────────────────────────────
@@ -207,6 +215,13 @@ def handler(event: dict, context) -> dict:
                 d = body
                 exe(cur, f"INSERT INTO {S}.managers (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (d["id"],d["name"]))
                 return ok({"id": d["id"]}, 201)
+            if method == "PUT" and row_id:
+                exe(cur, f"UPDATE {S}.managers SET name=%s WHERE id=%s", (body["name"],row_id))
+                return ok({"ok": True})
+            if method == "DELETE" and row_id:
+                exe(cur, f"UPDATE {S}.deals SET account_manager_id=NULL WHERE account_manager_id=%s", (row_id,))
+                exe(cur, f"DELETE FROM {S}.managers WHERE id=%s", (row_id,))
+                return ok({"ok": True})
 
         # ── DEALS ────────────────────────────────────────────────────────────
         if entity == "deals":
@@ -214,7 +229,7 @@ def handler(event: dict, context) -> dict:
                 rows = qry(cur, f"""
                     SELECT id,title,stage_id,amount,source,course_ids,student_count,
                            start_date,end_date,account_manager_id,invoice_number,
-                           invoice_date,payment_date,company_id,contact_ids,history,tags,created_at
+                           invoice_date,payment_date,company_id,contact_ids,history,tags,created_at,lost_reason
                     FROM {S}.deals ORDER BY created_at DESC
                 """)
                 return ok([_deal_dict(r) for r in rows])
@@ -223,8 +238,8 @@ def handler(event: dict, context) -> dict:
                 exe(cur, f"""
                     INSERT INTO {S}.deals (id,title,stage_id,amount,source,course_ids,student_count,
                         start_date,end_date,account_manager_id,invoice_number,invoice_date,
-                        payment_date,company_id,contact_ids,history,tags,created_at)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        payment_date,company_id,contact_ids,history,tags,created_at,lost_reason)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """, _deal_params(d))
                 return ok({"id": d["id"]}, 201)
             if method == "PUT" and row_id:
@@ -233,9 +248,12 @@ def handler(event: dict, context) -> dict:
                     UPDATE {S}.deals SET title=%s,stage_id=%s,amount=%s,source=%s,
                         course_ids=%s,student_count=%s,start_date=%s,end_date=%s,
                         account_manager_id=%s,invoice_number=%s,invoice_date=%s,
-                        payment_date=%s,company_id=%s,contact_ids=%s,history=%s,tags=%s
+                        payment_date=%s,company_id=%s,contact_ids=%s,history=%s,tags=%s,lost_reason=%s
                     WHERE id=%s
                 """, _deal_update_params(d, row_id))
+                return ok({"ok": True})
+            if method == "DELETE" and row_id:
+                exe(cur, f"DELETE FROM {S}.deals WHERE id=%s", (row_id,))
                 return ok({"ok": True})
 
         return err("Not found", 404)
@@ -255,6 +273,7 @@ def _deal_dict(r):
         "paymentDate": r["payment_date"], "companyId": r["company_id"] or "",
         "contactIds": r["contact_ids"] or [], "history": r["history"] or [],
         "tags": r["tags"] or [], "createdAt": r["created_at"],
+        "lostReason": r.get("lost_reason", ""),
     }
 
 
@@ -267,7 +286,7 @@ def _deal_params(d):
         d.get("invoiceDate",""), d.get("paymentDate",""),
         d.get("companyId") or None, json.dumps(d.get("contactIds",[])),
         json.dumps(d.get("history",[])), json.dumps(d.get("tags",[])),
-        d.get("createdAt",""),
+        d.get("createdAt",""), d.get("lostReason",""),
     )
 
 
@@ -280,5 +299,5 @@ def _deal_update_params(d, row_id):
         d.get("invoiceDate",""), d.get("paymentDate",""),
         d.get("companyId") or None, json.dumps(d.get("contactIds",[])),
         json.dumps(d.get("history",[])), json.dumps(d.get("tags",[])),
-        row_id,
+        d.get("lostReason",""), row_id,
     )

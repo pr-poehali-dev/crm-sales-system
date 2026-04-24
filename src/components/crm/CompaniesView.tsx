@@ -9,6 +9,7 @@ interface CompaniesViewProps {
   searchQuery: string;
   onAddCompany: (c: Omit<Company, 'id'>) => void;
   onEditCompany: (c: Company) => void;
+  onDeleteCompany?: (id: string) => void;
 }
 
 function CompanyModal({ company, contacts, deals, onClose, onSave }: {
@@ -144,8 +145,9 @@ function CompanyModal({ company, contacts, deals, onClose, onSave }: {
   );
 }
 
-export default function CompaniesView({ companies, contacts, deals, searchQuery, onAddCompany, onEditCompany }: CompaniesViewProps) {
+export default function CompaniesView({ companies, contacts, deals, searchQuery, onAddCompany, onEditCompany, onDeleteCompany }: CompaniesViewProps) {
   const [modal, setModal] = useState<Company | null | 'new'>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const getContactCount = (id: string) => contacts.filter(c => c.companyId === id).length;
   const getDealCount = (id: string) => deals.filter(d => d.companyId === id).length;
@@ -172,14 +174,29 @@ export default function CompaniesView({ companies, contacts, deals, searchQuery,
         {filtered.map(company => (
           <div
             key={company.id}
-            onClick={() => setModal(company)}
-            className="bg-white border border-slate-200 rounded-lg p-4 cursor-pointer hover:border-slate-400 hover:shadow-sm transition-all duration-150 animate-fade-in"
+            className="bg-white border border-slate-200 rounded-lg p-4 hover:border-slate-400 hover:shadow-sm transition-all duration-150 animate-fade-in"
           >
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-slate-900 text-sm">{company.name}</h3>
-              {company.segment && (
-                <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded flex-shrink-0">{company.segment}</span>
-              )}
+              <h3 className="font-medium text-slate-900 text-sm cursor-pointer flex-1" onClick={() => setModal(company)}>{company.name}</h3>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {company.segment && (
+                  <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{company.segment}</span>
+                )}
+                {onDeleteCompany && (
+                  confirmDeleteId === company.id ? (
+                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => { onDeleteCompany(company.id); setConfirmDeleteId(null); }}
+                        className="text-[10px] px-1.5 py-0.5 bg-rose-600 text-white rounded">Удалить</button>
+                      <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] px-1.5 py-0.5 border border-slate-200 rounded">Нет</button>
+                    </div>
+                  ) : (
+                    <button onClick={e => { e.stopPropagation(); setConfirmDeleteId(company.id); }}
+                      className="p-1 text-slate-300 hover:text-rose-500 transition-colors rounded">
+                      <Icon name="Trash2" size={12} />
+                    </button>
+                  )
+                )}
+              </div>
             </div>
 
             {(company.region || company.city) && (

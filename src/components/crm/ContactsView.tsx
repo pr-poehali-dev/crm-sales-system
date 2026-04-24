@@ -9,6 +9,7 @@ interface ContactsViewProps {
   searchQuery: string;
   onAddContact: (c: Omit<Contact, 'id'>) => void;
   onEditContact: (c: Contact) => void;
+  onDeleteContact?: (id: string) => void;
 }
 
 function ContactModal({ contact, companies, onClose, onSave }: {
@@ -168,10 +169,11 @@ function ContactModal({ contact, companies, onClose, onSave }: {
   );
 }
 
-export default function ContactsView({ contacts, companies, deals, searchQuery, onAddContact, onEditContact }: ContactsViewProps) {
+export default function ContactsView({ contacts, companies, deals, searchQuery, onAddContact, onEditContact, onDeleteContact }: ContactsViewProps) {
   const [modal, setModal] = useState<Contact | null | 'new'>(null);
   const [filterCompany, setFilterCompany] = useState('all');
   const [filterDM, setFilterDM] = useState('all');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const getCompanyName = (id: string) => companies.find(c => c.id === id)?.name ?? '—';
   const getDealCount = (id: string) => deals.filter(d => d.contactIds.includes(id)).length;
@@ -218,32 +220,48 @@ export default function ContactsView({ contacts, companies, deals, searchQuery, 
               <th className="text-left px-4 py-2.5 text-[10.5px] font-medium text-slate-500 uppercase tracking-wider hidden lg:table-cell">Email</th>
               <th className="text-center px-4 py-2.5 text-[10.5px] font-medium text-slate-500 uppercase tracking-wider">ЛПР</th>
               <th className="text-center px-4 py-2.5 text-[10.5px] font-medium text-slate-500 uppercase tracking-wider hidden lg:table-cell">Сделки</th>
+              {onDeleteContact && <th className="w-10" />}
             </tr>
           </thead>
           <tbody>
             {filtered.map((c) => (
               <tr
                 key={c.id}
-                onClick={() => setModal(c)}
-                className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors animate-fade-in"
+                className="border-b border-slate-50 hover:bg-slate-50 transition-colors animate-fade-in"
               >
-                <td className="px-4 py-2.5 font-medium text-slate-900">{c.fullName}</td>
-                <td className="px-4 py-2.5 text-slate-600 hidden md:table-cell">{getCompanyName(c.companyId)}</td>
-                <td className="px-4 py-2.5 text-slate-500 hidden md:table-cell">{c.position || '—'}</td>
-                <td className="px-4 py-2.5 text-slate-600">
+                <td className="px-4 py-2.5 font-medium text-slate-900 cursor-pointer" onClick={() => setModal(c)}>{c.fullName}</td>
+                <td className="px-4 py-2.5 text-slate-600 hidden md:table-cell cursor-pointer" onClick={() => setModal(c)}>{getCompanyName(c.companyId)}</td>
+                <td className="px-4 py-2.5 text-slate-500 hidden md:table-cell cursor-pointer" onClick={() => setModal(c)}>{c.position || '—'}</td>
+                <td className="px-4 py-2.5 text-slate-600 cursor-pointer" onClick={() => setModal(c)}>
                   {c.phones[0]?.value ?? '—'}
                   {c.phones.length > 1 && <span className="text-xs text-slate-400 ml-1">+{c.phones.length - 1}</span>}
                 </td>
-                <td className="px-4 py-2.5 text-slate-500 hidden lg:table-cell">
+                <td className="px-4 py-2.5 text-slate-500 hidden lg:table-cell cursor-pointer" onClick={() => setModal(c)}>
                   {c.emails[0]?.value ?? '—'}
                 </td>
-                <td className="px-4 py-2.5 text-center">
+                <td className="px-4 py-2.5 text-center cursor-pointer" onClick={() => setModal(c)}>
                   {c.isDecisionMaker
                     ? <span className="inline-flex items-center justify-center w-5 h-5 bg-emerald-100 rounded-full"><Icon name="Check" size={11} className="text-emerald-600" /></span>
                     : <span className="text-slate-300">—</span>
                   }
                 </td>
-                <td className="px-4 py-2.5 text-center text-slate-500 hidden lg:table-cell">{getDealCount(c.id)}</td>
+                <td className="px-4 py-2.5 text-center text-slate-500 hidden lg:table-cell cursor-pointer" onClick={() => setModal(c)}>{getDealCount(c.id)}</td>
+                {onDeleteContact && (
+                  <td className="px-2 py-2.5 text-center">
+                    {confirmDeleteId === c.id ? (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { onDeleteContact(c.id); setConfirmDeleteId(null); }}
+                          className="text-[10px] px-1.5 py-0.5 bg-rose-600 text-white rounded">Да</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] px-1.5 py-0.5 border border-slate-200 rounded">Нет</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmDeleteId(c.id)}
+                        className="p-1 text-slate-300 hover:text-rose-500 transition-colors rounded">
+                        <Icon name="Trash2" size={12} />
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
