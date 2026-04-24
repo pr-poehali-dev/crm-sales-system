@@ -10,22 +10,24 @@ import DealModal from '@/components/crm/DealModal';
 import AddDealModal from '@/components/crm/AddDealModal';
 import CompaniesView from '@/components/crm/CompaniesView';
 import ContactsView from '@/components/crm/ContactsView';
+import TasksView from '@/components/crm/TasksView';
 import Icon from '@/components/ui/icon';
 
-type View = 'funnel' | 'deals' | 'companies' | 'contacts';
+type View = 'funnel' | 'deals' | 'tasks' | 'companies' | 'contacts';
 
 export default function Index() {
   const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
   const [contacts, setContacts] = useState<Contact[]>(initialContacts);
   const [managers] = useState<Manager[]>(initialManagers);
-  const [courses] = useState<Course[]>(initialCourses);
+  const [courses, setCourses] = useState<Course[]>(initialCourses);
 
   const [view, setView] = useState<View>('funnel');
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [addModalStageId, setAddModalStageId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // ─── Deal handlers ──────────────────────────────────────────────────────
   const handleUpdateDeal = (updated: Deal) => {
     setDeals(prev => prev.map(d => d.id === updated.id ? updated : d));
     if (selectedDeal?.id === updated.id) setSelectedDeal(updated);
@@ -34,28 +36,52 @@ export default function Index() {
     setDeals(prev => [...prev, { ...data, id: `d${Date.now()}`, createdAt: new Date().toISOString().split('T')[0], history: [] }]);
   };
 
-  const handleAddCompany = (data: Omit<Company, 'id'>) =>
-    setCompanies(prev => [...prev, { ...data, id: `co${Date.now()}` }]);
+  // ─── Company handlers ───────────────────────────────────────────────────
+  const handleAddCompany = (data: Omit<Company, 'id'>): Company => {
+    const co: Company = { ...data, id: `co${Date.now()}` };
+    setCompanies(prev => [...prev, co]);
+    return co;
+  };
   const handleEditCompany = (updated: Company) =>
     setCompanies(prev => prev.map(c => c.id === updated.id ? updated : c));
 
-  const handleAddContact = (data: Omit<Contact, 'id'>) =>
-    setContacts(prev => [...prev, { ...data, id: `ct${Date.now()}` }]);
+  // ─── Contact handlers ───────────────────────────────────────────────────
+  const handleAddContact = (data: Omit<Contact, 'id'>): Contact => {
+    const ct: Contact = { ...data, id: `ct${Date.now()}` };
+    setContacts(prev => [...prev, ct]);
+    return ct;
+  };
   const handleEditContact = (updated: Contact) =>
     setContacts(prev => prev.map(c => c.id === updated.id ? updated : c));
 
+  // ─── Course handlers ────────────────────────────────────────────────────
+  const handleAddCourse = (name: string): Course => {
+    const cr: Course = { id: `c${Date.now()}`, name };
+    setCourses(prev => [...prev, cr]);
+    return cr;
+  };
+  const handleUpdateCourse = (updated: Course) =>
+    setCourses(prev => prev.map(c => c.id === updated.id ? updated : c));
+
+  // ─── Stats ──────────────────────────────────────────────────────────────
   const totalPipeline = deals.filter(d => d.stageId !== 'done').reduce((s, d) => s + d.amount, 0);
   const wonTotal = deals.filter(d => d.stageId === 'done').reduce((s, d) => s + d.amount, 0);
   const overdueCount = deals.reduce((acc, deal) =>
-    acc + deal.history.filter(h => h.type === 'task' && !h.done && new Date((h as { dueAt: string }).dueAt) < new Date()).length, 0
+    acc + deal.history.filter(h => h.type === 'task' && !(h as { done: boolean }).done && new Date((h as { dueAt: string }).dueAt) < new Date()).length, 0
   );
 
   const navItems: { id: View; label: string; icon: string }[] = [
-    { id: 'funnel',    label: 'Воронка',   icon: 'Columns3'  },
-    { id: 'deals',     label: 'Сделки',    icon: 'Briefcase' },
-    { id: 'companies', label: 'Компании',  icon: 'Building2' },
-    { id: 'contacts',  label: 'Контакты',  icon: 'Users'     },
+    { id: 'funnel',    label: 'Воронка',   icon: 'Columns3'     },
+    { id: 'deals',     label: 'Сделки',    icon: 'Briefcase'    },
+    { id: 'tasks',     label: 'Задачи',    icon: 'CheckSquare'  },
+    { id: 'companies', label: 'Компании',  icon: 'Building2'    },
+    { id: 'contacts',  label: 'Контакты',  icon: 'Users'        },
   ];
+
+  const openDeal = (dealId: string) => {
+    const d = deals.find(x => x.id === dealId);
+    if (d) setSelectedDeal(d);
+  };
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] font-sans">
@@ -84,25 +110,22 @@ export default function Index() {
                 <button
                   key={item.id}
                   onClick={() => setView(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-150 ${
-                    view === item.id
-                      ? 'bg-slate-100 text-slate-900 font-medium'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-150 relative ${
+                    view === item.id ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <Icon name={item.icon} size={13} />
                   <span className="hidden sm:inline">{item.label}</span>
+                  {item.id === 'tasks' && overdueCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 text-white text-[8px] rounded-full flex items-center justify-center font-mono leading-none">
+                      {overdueCount > 9 ? '9+' : overdueCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>
 
             <div className="hidden lg:flex items-center gap-4 ml-2">
-              {overdueCount > 0 && (
-                <div className="flex items-center gap-1 text-rose-600">
-                  <Icon name="AlertCircle" size={13} />
-                  <span className="text-xs font-medium">{overdueCount} просроч.</span>
-                </div>
-              )}
               <div className="text-right">
                 <p className="text-[9px] text-slate-400 uppercase tracking-wider leading-none mb-0.5">В работе</p>
                 <p className="font-mono font-medium text-slate-800 text-[12px]">{formatAmount(totalPipeline)}</p>
@@ -136,6 +159,8 @@ export default function Index() {
             deals={deals}
             stages={stages}
             companies={companies}
+            courses={courses}
+            managers={managers}
             onDealClick={setSelectedDeal}
             onStageChange={(dealId, stageId) => setDeals(prev => prev.map(d => {
               if (d.id !== dealId || d.stageId === stageId) return d;
@@ -157,13 +182,21 @@ export default function Index() {
             searchQuery={searchQuery}
           />
         )}
+        {view === 'tasks' && (
+          <TasksView
+            deals={deals}
+            companies={companies}
+            onUpdateDeal={handleUpdateDeal}
+            onDealClick={openDeal}
+          />
+        )}
         {view === 'companies' && (
           <CompaniesView
             companies={companies}
             contacts={contacts}
             deals={deals}
             searchQuery={searchQuery}
-            onAddCompany={handleAddCompany}
+            onAddCompany={d => { handleAddCompany(d); }}
             onEditCompany={handleEditCompany}
           />
         )}
@@ -173,7 +206,7 @@ export default function Index() {
             companies={companies}
             deals={deals}
             searchQuery={searchQuery}
-            onAddContact={handleAddContact}
+            onAddContact={d => { handleAddContact(d); }}
             onEditContact={handleEditContact}
           />
         )}
@@ -190,6 +223,10 @@ export default function Index() {
           onUpdate={handleUpdateDeal}
           onUpdateCompany={handleEditCompany}
           onUpdateContact={handleEditContact}
+          onAddCompany={handleAddCompany}
+          onAddContact={handleAddContact}
+          onAddCourse={handleAddCourse}
+          onUpdateCourse={handleUpdateCourse}
         />
       )}
 
