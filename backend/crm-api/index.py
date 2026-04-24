@@ -1,7 +1,6 @@
 """
-CRM API — единая точка входа для всех сущностей CRM.
-CRUD для deals, companies, contacts, courses, managers.
-Также: импорт/экспорт CSV.
+CRM API — CRUD для deals, companies, contacts, courses, managers.
+Роутинг через query param ?e=<entity>&id=<id>
 """
 import json
 import os
@@ -11,7 +10,7 @@ import time
 import psycopg2
 import psycopg2.extras
 
-SCHEMA = "t_p92580427_crm_sales_system"
+S = "t_p92580427_crm_sales_system"
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -36,14 +35,12 @@ def err(msg, status=400):
 
 
 def qry(cur, sql, params=None):
-    cur.execute(f"SET search_path TO {SCHEMA}")
     cur.execute(sql, params)
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
 def exe(cur, sql, params=None):
-    cur.execute(f"SET search_path TO {SCHEMA}")
     cur.execute(sql, params)
 
 
@@ -52,7 +49,7 @@ def handler(event: dict, context) -> dict:
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
     method = event.get("httpMethod", "GET")
-    path = event.get("path", "/").rstrip("/") or "/"
+    qs = event.get("queryStringParameters") or {}
     body = {}
     if event.get("body"):
         try:
@@ -60,16 +57,15 @@ def handler(event: dict, context) -> dict:
         except Exception:
             pass
 
-    parts = [p for p in path.split("/") if p]
-    entity = parts[0] if parts else ""
-    row_id = parts[1] if len(parts) > 1 else None
+    entity = qs.get("e", "")
+    row_id = qs.get("id") or None
 
     conn = get_conn()
     cur = conn.cursor()
     try:
         # ── EXPORT CSV ───────────────────────────────────────────────────────
         if entity == "export" and method == "GET":
-            rows = qry(cur, """
+            rows = qry(cur, f"""
                 SELECT d.id, d.title, d.stage_id, d.amount, d.source,
                        d.course_ids, d.student_count, d.start_date, d.end_date,
                        COALESCE(d.account_manager_id,'') as account_manager_id,
@@ -78,9 +74,9 @@ def handler(event: dict, context) -> dict:
                        d.contact_ids, d.tags, d.created_at,
                        COALESCE(c.name,'') as company_name,
                        COALESCE(m.name,'') as manager_name
-                FROM deals d
-                LEFT JOIN companies c ON c.id = d.company_id
-                LEFT JOIN managers m ON m.id = d.account_manager_id
+                FROM {S}.deals d
+                LEFT JOIN {S}.companies c ON c.id = d.company_id
+                LEFT JOIN {S}.managers m ON m.id = d.account_manager_id
                 ORDER BY d.created_at
             """)
             buf = io.StringIO()
@@ -118,8 +114,8 @@ def handler(event: dict, context) -> dict:
                 title = row.get("Название", "").strip()
                 if not title:
                     continue
-                exe(cur, """
-                    INSERT INTO deals (id,title,stage_id,amount,source,course_ids,
+                exe(cur, f"""
+                    INSERT INTO {S}.deals (id,title,stage_id,amount,source,course_ids,
                         student_count,start_date,end_date,account_manager_id,
                         invoice_number,invoice_date,payment_date,company_id,
                         contact_ids,tags,created_at,history)
@@ -144,88 +140,88 @@ def handler(event: dict, context) -> dict:
 
         # ── SEED ─────────────────────────────────────────────────────────────
         if entity == "seed" and method == "POST":
-            rows = qry(cur, "SELECT COUNT(*) as cnt FROM managers")
+            rows = qry(cur, f"SELECT COUNT(*) as cnt FROM {S}.managers")
             if rows[0]["cnt"] == 0:
                 for mid, name in [("m1","Алексей Громов"),("m2","Мария Лебедева"),("m3","Дмитрий Орлов")]:
-                    exe(cur, "INSERT INTO managers (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (mid, name))
+                    exe(cur, f"INSERT INTO {S}.managers (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (mid, name))
                 for cid, name in [("c1","Python для начинающих"),("c2","Data Science"),("c3","UX/UI Дизайн"),("c4","Project Management")]:
-                    exe(cur, "INSERT INTO courses (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (cid, name))
+                    exe(cur, f"INSERT INTO {S}.courses (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (cid, name))
             return ok({"ok": True})
 
         # ── COMPANIES ────────────────────────────────────────────────────────
         if entity == "companies":
             if method == "GET":
-                rows = qry(cur, "SELECT id,name,legal_entities,segment,region,city FROM companies ORDER BY name")
+                rows = qry(cur, f"SELECT id,name,legal_entities,segment,region,city FROM {S}.companies ORDER BY name")
                 return ok([{"id":r["id"],"name":r["name"],"legalEntities":r["legal_entities"],
                             "segment":r["segment"],"region":r["region"],"city":r["city"]} for r in rows])
             if method == "POST":
                 d = body
-                exe(cur, "INSERT INTO companies (id,name,legal_entities,segment,region,city) VALUES (%s,%s,%s,%s,%s,%s)",
-                    (d["id"], d["name"], json.dumps(d.get("legalEntities",[])), d.get("segment",""), d.get("region",""), d.get("city","")))
+                exe(cur, f"INSERT INTO {S}.companies (id,name,legal_entities,segment,region,city) VALUES (%s,%s,%s,%s,%s,%s)",
+                    (d["id"],d["name"],json.dumps(d.get("legalEntities",[])),d.get("segment",""),d.get("region",""),d.get("city","")))
                 return ok({"id": d["id"]}, 201)
             if method == "PUT" and row_id:
                 d = body
-                exe(cur, "UPDATE companies SET name=%s,legal_entities=%s,segment=%s,region=%s,city=%s WHERE id=%s",
-                    (d["name"], json.dumps(d.get("legalEntities",[])), d.get("segment",""), d.get("region",""), d.get("city",""), row_id))
+                exe(cur, f"UPDATE {S}.companies SET name=%s,legal_entities=%s,segment=%s,region=%s,city=%s WHERE id=%s",
+                    (d["name"],json.dumps(d.get("legalEntities",[])),d.get("segment",""),d.get("region",""),d.get("city",""),row_id))
                 return ok({"ok": True})
 
         # ── CONTACTS ─────────────────────────────────────────────────────────
         if entity == "contacts":
             if method == "GET":
-                rows = qry(cur, "SELECT id,full_name,phones,emails,position,is_decision_maker,company_id FROM contacts ORDER BY full_name")
+                rows = qry(cur, f"SELECT id,full_name,phones,emails,position,is_decision_maker,company_id FROM {S}.contacts ORDER BY full_name")
                 return ok([{"id":r["id"],"fullName":r["full_name"],"phones":r["phones"],
                             "emails":r["emails"],"position":r["position"],
                             "isDecisionMaker":r["is_decision_maker"],"companyId":r["company_id"] or ""} for r in rows])
             if method == "POST":
                 d = body
-                exe(cur, "INSERT INTO contacts (id,full_name,phones,emails,position,is_decision_maker,company_id) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                    (d["id"], d["fullName"], json.dumps(d.get("phones",[])), json.dumps(d.get("emails",[])),
-                     d.get("position",""), d.get("isDecisionMaker",False), d.get("companyId") or None))
+                exe(cur, f"INSERT INTO {S}.contacts (id,full_name,phones,emails,position,is_decision_maker,company_id) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                    (d["id"],d["fullName"],json.dumps(d.get("phones",[])),json.dumps(d.get("emails",[])),
+                     d.get("position",""),d.get("isDecisionMaker",False),d.get("companyId") or None))
                 return ok({"id": d["id"]}, 201)
             if method == "PUT" and row_id:
                 d = body
-                exe(cur, "UPDATE contacts SET full_name=%s,phones=%s,emails=%s,position=%s,is_decision_maker=%s,company_id=%s WHERE id=%s",
-                    (d["fullName"], json.dumps(d.get("phones",[])), json.dumps(d.get("emails",[])),
-                     d.get("position",""), d.get("isDecisionMaker",False), d.get("companyId") or None, row_id))
+                exe(cur, f"UPDATE {S}.contacts SET full_name=%s,phones=%s,emails=%s,position=%s,is_decision_maker=%s,company_id=%s WHERE id=%s",
+                    (d["fullName"],json.dumps(d.get("phones",[])),json.dumps(d.get("emails",[])),
+                     d.get("position",""),d.get("isDecisionMaker",False),d.get("companyId") or None,row_id))
                 return ok({"ok": True})
 
         # ── COURSES ──────────────────────────────────────────────────────────
         if entity == "courses":
             if method == "GET":
-                rows = qry(cur, "SELECT id,name FROM courses ORDER BY name")
+                rows = qry(cur, f"SELECT id,name FROM {S}.courses ORDER BY name")
                 return ok([{"id":r["id"],"name":r["name"]} for r in rows])
             if method == "POST":
                 d = body
-                exe(cur, "INSERT INTO courses (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (d["id"], d["name"]))
+                exe(cur, f"INSERT INTO {S}.courses (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (d["id"],d["name"]))
                 return ok({"id": d["id"]}, 201)
             if method == "PUT" and row_id:
-                exe(cur, "UPDATE courses SET name=%s WHERE id=%s", (body["name"], row_id))
+                exe(cur, f"UPDATE {S}.courses SET name=%s WHERE id=%s", (body["name"],row_id))
                 return ok({"ok": True})
 
         # ── MANAGERS ─────────────────────────────────────────────────────────
         if entity == "managers":
             if method == "GET":
-                rows = qry(cur, "SELECT id,name FROM managers ORDER BY name")
+                rows = qry(cur, f"SELECT id,name FROM {S}.managers ORDER BY name")
                 return ok([{"id":r["id"],"name":r["name"]} for r in rows])
             if method == "POST":
                 d = body
-                exe(cur, "INSERT INTO managers (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (d["id"], d["name"]))
+                exe(cur, f"INSERT INTO {S}.managers (id,name) VALUES (%s,%s) ON CONFLICT DO NOTHING", (d["id"],d["name"]))
                 return ok({"id": d["id"]}, 201)
 
         # ── DEALS ────────────────────────────────────────────────────────────
         if entity == "deals":
             if method == "GET":
-                rows = qry(cur, """
+                rows = qry(cur, f"""
                     SELECT id,title,stage_id,amount,source,course_ids,student_count,
                            start_date,end_date,account_manager_id,invoice_number,
                            invoice_date,payment_date,company_id,contact_ids,history,tags,created_at
-                    FROM deals ORDER BY created_at DESC
+                    FROM {S}.deals ORDER BY created_at DESC
                 """)
                 return ok([_deal_dict(r) for r in rows])
             if method == "POST":
                 d = body
-                exe(cur, """
-                    INSERT INTO deals (id,title,stage_id,amount,source,course_ids,student_count,
+                exe(cur, f"""
+                    INSERT INTO {S}.deals (id,title,stage_id,amount,source,course_ids,student_count,
                         start_date,end_date,account_manager_id,invoice_number,invoice_date,
                         payment_date,company_id,contact_ids,history,tags,created_at)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
@@ -233,8 +229,8 @@ def handler(event: dict, context) -> dict:
                 return ok({"id": d["id"]}, 201)
             if method == "PUT" and row_id:
                 d = body
-                exe(cur, """
-                    UPDATE deals SET title=%s,stage_id=%s,amount=%s,source=%s,
+                exe(cur, f"""
+                    UPDATE {S}.deals SET title=%s,stage_id=%s,amount=%s,source=%s,
                         course_ids=%s,student_count=%s,start_date=%s,end_date=%s,
                         account_manager_id=%s,invoice_number=%s,invoice_date=%s,
                         payment_date=%s,company_id=%s,contact_ids=%s,history=%s,tags=%s
