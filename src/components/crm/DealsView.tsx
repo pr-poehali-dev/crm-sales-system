@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Deal, Company, Contact, Manager, Course, formatAmount, priorityLabel, stages, sourceOptions } from '@/data/crm';
+import { Deal, Company, Contact, Manager, Course, formatAmount, stages, sourceOptions, HistoryTask } from '@/data/crm';
 import Icon from '@/components/ui/icon';
 
 interface DealsViewProps {
@@ -12,24 +12,26 @@ interface DealsViewProps {
   searchQuery: string;
 }
 
-const priorityBadge: Record<string, string> = {
-  low: 'text-slate-500 bg-slate-100',
-  medium: 'text-amber-700 bg-amber-50',
-  high: 'text-rose-600 bg-rose-50',
-};
-
 type SortField = 'title' | 'company' | 'amount' | 'stage' | 'manager' | 'studentCount';
 
 type Filters = {
   stage: string;
-  priority: string;
+  taskPriority: string;
   source: string;
   manager: string;
   company: string;
 };
 
+function getTopTaskPriority(deal: Deal): 'high' | 'medium' | 'low' | null {
+  const active = deal.history.filter((h): h is HistoryTask => h.type === 'task' && !h.done);
+  if (!active.length) return null;
+  if (active.some(t => t.priority === 'high')) return 'high';
+  if (active.some(t => t.priority === 'medium')) return 'medium';
+  return 'low';
+}
+
 export default function DealsView({ deals, companies, contacts, managers, courses, onDealClick, searchQuery }: DealsViewProps) {
-  const [filters, setFilters] = useState<Filters>({ stage: 'all', priority: 'all', source: 'all', manager: 'all', company: 'all' });
+  const [filters, setFilters] = useState<Filters>({ stage: 'all', taskPriority: 'all', source: 'all', manager: 'all', company: 'all' });
   const [sortField, setSortField] = useState<SortField>('amount');
   const [sortAsc, setSortAsc] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -39,7 +41,6 @@ export default function DealsView({ deals, companies, contacts, managers, course
   const getStageName = (id: string) => stages.find(s => s.id === id)?.name ?? id;
   const getCourseNames = (ids: string[]) => ids.map(id => courses.find(c => c.id === id)?.name ?? id).join(', ');
 
-  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
   const stageOrder: Record<string, number> = Object.fromEntries(stages.map((s, i) => [s.id, i]));
 
   const filtered = deals
@@ -47,7 +48,7 @@ export default function DealsView({ deals, companies, contacts, managers, course
       const q = searchQuery.toLowerCase();
       if (q && !d.title.toLowerCase().includes(q) && !getCompanyName(d.companyId).toLowerCase().includes(q)) return false;
       if (filters.stage !== 'all' && d.stageId !== filters.stage) return false;
-      if (filters.priority !== 'all' && d.priority !== filters.priority) return false;
+      if (filters.taskPriority !== 'all' && getTopTaskPriority(d) !== filters.taskPriority) return false;
       if (filters.source !== 'all' && d.source !== filters.source) return false;
       if (filters.manager !== 'all' && d.accountManagerId !== filters.manager) return false;
       if (filters.company !== 'all' && d.companyId !== filters.company) return false;
@@ -99,7 +100,7 @@ export default function DealsView({ deals, companies, contacts, managers, course
 
         {activeFiltersCount > 0 && (
           <button
-            onClick={() => setFilters({ stage: 'all', priority: 'all', source: 'all', manager: 'all', company: 'all' })}
+            onClick={() => setFilters({ stage: 'all', taskPriority: 'all', source: 'all', manager: 'all', company: 'all' })}
             className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
           >
             <Icon name="X" size={11} /> Сбросить
@@ -121,8 +122,8 @@ export default function DealsView({ deals, companies, contacts, managers, course
             </select>
           </div>
           <div>
-            <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Приоритет</label>
-            <select value={filters.priority} onChange={e => setFilter('priority', e.target.value)} className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:border-slate-400">
+            <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Приоритет задач</label>
+            <select value={filters.taskPriority} onChange={e => setFilter('taskPriority', e.target.value)} className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:border-slate-400">
               <option value="all">Все</option>
               <option value="high">Высокий</option>
               <option value="medium">Средний</option>
@@ -192,7 +193,13 @@ export default function DealsView({ deals, companies, contacts, managers, course
               >
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${deal.priority === 'high' ? 'bg-rose-500' : deal.priority === 'medium' ? 'bg-amber-400' : 'bg-slate-300'}`} />
+                    {(() => {
+                      const p = getTopTaskPriority(deal);
+                      const hasTask = deal.history.some(h => h.type === 'task');
+                      if (!hasTask) return <span className="text-[9px] text-slate-300 border border-slate-200 rounded px-1 py-0.5 flex-shrink-0">нет задач</span>;
+                      if (!p) return null;
+                      return <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${p === 'high' ? 'bg-rose-500' : p === 'medium' ? 'bg-amber-400' : 'bg-slate-400'}`} />;
+                    })()}
                     <span className="font-medium text-slate-900 text-[13px]">{deal.title}</span>
                   </div>
                 </td>

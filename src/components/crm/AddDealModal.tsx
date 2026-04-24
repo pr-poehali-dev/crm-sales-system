@@ -16,7 +16,6 @@ export default function AddDealModal({ defaultStageId, companies, contacts, mana
   const [form, setForm] = useState({
     title: '',
     stageId: defaultStageId,
-    priority: 'medium' as 'low' | 'medium' | 'high',
     amount: '',
     source: '',
     courseIds: [] as string[],
@@ -49,7 +48,6 @@ export default function AddDealModal({ defaultStageId, companies, contacts, mana
     onAdd({
       title: form.title,
       stageId: form.stageId,
-      priority: form.priority,
       amount: Number(form.amount) || 0,
       source: form.source,
       courseIds: form.courseIds,
@@ -88,21 +86,11 @@ export default function AddDealModal({ defaultStageId, companies, contacts, mana
               <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Название сделки" required className={inp} />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={lbl}>Этап</label>
-                <select value={form.stageId} onChange={e => set('stageId', e.target.value)} className={inp}>
-                  {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={lbl}>Приоритет</label>
-                <select value={form.priority} onChange={e => set('priority', e.target.value)} className={inp}>
-                  <option value="high">Высокий</option>
-                  <option value="medium">Средний</option>
-                  <option value="low">Низкий</option>
-                </select>
-              </div>
+            <div>
+              <label className={lbl}>Этап</label>
+              <select value={form.stageId} onChange={e => set('stageId', e.target.value)} className={inp}>
+                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

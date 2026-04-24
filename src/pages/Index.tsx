@@ -137,7 +137,11 @@ export default function Index() {
             stages={stages}
             companies={companies}
             onDealClick={setSelectedDeal}
-            onStageChange={(dealId, stageId) => setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stageId } : d))}
+            onStageChange={(dealId, stageId) => setDeals(prev => prev.map(d => {
+              if (d.id !== dealId || d.stageId === stageId) return d;
+              const event = { id: `hs${Date.now()}`, type: 'stage_change' as const, fromStageId: d.stageId, toStageId: stageId, author: 'Вы', createdAt: new Date().toISOString() };
+              return { ...d, stageId, history: [...d.history, event] };
+            }))}
             onAddDeal={setAddModalStageId}
             searchQuery={searchQuery}
           />
@@ -184,6 +188,8 @@ export default function Index() {
           courses={courses}
           onClose={() => setSelectedDeal(null)}
           onUpdate={handleUpdateDeal}
+          onUpdateCompany={handleEditCompany}
+          onUpdateContact={handleEditContact}
         />
       )}
 

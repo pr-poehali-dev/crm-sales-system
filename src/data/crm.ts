@@ -55,6 +55,8 @@ export type HistoryComment = {
   createdAt: string;
 };
 
+export type TaskPriority = 'low' | 'medium' | 'high';
+
 export type HistoryTask = {
   id: string;
   type: 'task';
@@ -63,18 +65,25 @@ export type HistoryTask = {
   createdAt: string;
   dueAt: string;
   done: boolean;
+  priority: TaskPriority;
 };
 
-export type HistoryItem = HistoryComment | HistoryTask;
+export type HistoryStageChange = {
+  id: string;
+  type: 'stage_change';
+  fromStageId: string;
+  toStageId: string;
+  author: string;
+  createdAt: string;
+};
+
+export type HistoryItem = HistoryComment | HistoryTask | HistoryStageChange;
 
 // ─── Deal ──────────────────────────────────────────────────────────────────
-export type Priority = 'low' | 'medium' | 'high';
-
 export type Deal = {
   id: string;
   title: string;
   stageId: string;
-  priority: Priority;
   amount: number;
   source: string;
   courseIds: string[];
@@ -172,7 +181,6 @@ export const initialDeals: Deal[] = [
     id: 'd1',
     title: 'Корпоративное обучение Python',
     stageId: 'qualify',
-    priority: 'high',
     amount: 450000,
     source: 'Холодный звонок',
     courseIds: ['c1', 'c2'],
@@ -188,7 +196,8 @@ export const initialDeals: Deal[] = [
     tags: ['IT', 'Крупный'],
     history: [
       { id: 'h1', type: 'comment', text: 'Провели первый созвон, клиент заинтересован', author: 'Алексей Громов', createdAt: '2026-04-10T10:30:00' },
-      { id: 'h2', type: 'task', text: 'Подготовить коммерческое предложение', author: 'Алексей Громов', createdAt: '2026-04-10T10:35:00', dueAt: '2026-04-15T18:00:00', done: false },
+      { id: 'h2', type: 'task', text: 'Подготовить коммерческое предложение', author: 'Алексей Громов', createdAt: '2026-04-10T10:35:00', dueAt: '2026-04-15T18:00:00', done: false, priority: 'high' },
+      { id: 'h_s1', type: 'stage_change', fromStageId: 'new_lead', toStageId: 'qualify', author: 'Алексей Громов', createdAt: '2026-04-10T09:00:00' },
     ],
     createdAt: '2026-04-01',
   },
@@ -196,7 +205,6 @@ export const initialDeals: Deal[] = [
     id: 'd2',
     title: 'Обучение команды дизайнеров',
     stageId: 'new_lead',
-    priority: 'medium',
     amount: 120000,
     source: 'Сайт',
     courseIds: ['c3'],
@@ -217,7 +225,6 @@ export const initialDeals: Deal[] = [
     id: 'd3',
     title: 'PM обучение топ-менеджеров',
     stageId: 'contract_sent',
-    priority: 'high',
     amount: 780000,
     source: 'Рекомендация',
     courseIds: ['c4'],
@@ -245,7 +252,7 @@ export const formatAmount = (amount: number): string => {
   return `${amount} ₽`;
 };
 
-export const priorityLabel: Record<string, string> = {
+export const taskPriorityLabel: Record<string, string> = {
   low: 'Низкий',
   medium: 'Средний',
   high: 'Высокий',
