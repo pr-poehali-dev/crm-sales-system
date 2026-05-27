@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Deal, Company, Contact, Manager, Course, formatAmount, stages, sourceOptions, HistoryTask } from '@/data/crm';
+import { Deal, Company, Contact, Manager, Course, formatAmount, stages, stagesDiag, sourceOptions, HistoryTask } from '@/data/crm';
 import Icon from '@/components/ui/icon';
+
+const allStages = [...stages, ...stagesDiag];
 
 interface DealsViewProps {
   deals: Deal[];
@@ -38,10 +40,10 @@ export default function DealsView({ deals, companies, contacts, managers, course
 
   const getCompanyName = (id: string) => companies.find(c => c.id === id)?.name ?? '—';
   const getManagerName = (id: string) => managers.find(m => m.id === id)?.name ?? '—';
-  const getStageName = (id: string) => stages.find(s => s.id === id)?.name ?? id;
+  const getStageName = (id: string) => allStages.find(s => s.id === id)?.name ?? id;
   const getCourseNames = (ids: string[]) => ids.map(id => courses.find(c => c.id === id)?.name ?? id).join(', ');
 
-  const stageOrder: Record<string, number> = Object.fromEntries(stages.map((s, i) => [s.id, i]));
+  const stageOrder: Record<string, number> = Object.fromEntries(allStages.map((s, i) => [s.id, i]));
 
   const filtered = deals
     .filter(d => {
@@ -118,7 +120,7 @@ export default function DealsView({ deals, companies, contacts, managers, course
             <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Этап</label>
             <select value={filters.stage} onChange={e => setFilter('stage', e.target.value)} className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:border-slate-400">
               <option value="all">Все</option>
-              {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {allStages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div>

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Deal, Company, Contact, Manager, Course, stages, sourceOptions, segmentOptions, regionOptions } from '@/data/crm';
+import { Deal, Company, Contact, Manager, Course, Stage, sourceOptions, segmentOptions, regionOptions } from '@/data/crm';
 import Icon from '@/components/ui/icon';
 
 interface AddDealModalProps {
   defaultStageId: string;
+  funnelId: string;
+  funnelStages: Stage[];
   companies: Company[];
   contacts: Contact[];
   managers: Manager[];
@@ -176,7 +178,7 @@ function CoursesDropdown({ courses, selected, onToggle }: {
 }
 
 // ─── Main modal ───────────────────────────────────────────────────────────
-export default function AddDealModal({ defaultStageId, companies, contacts, managers, courses, onClose, onAdd, onAddCompany, onAddContact }: AddDealModalProps) {
+export default function AddDealModal({ defaultStageId, funnelId, funnelStages, companies, contacts, managers, courses, onClose, onAdd, onAddCompany, onAddContact }: AddDealModalProps) {
   const [form, setForm] = useState({
     title: '',
     stageId: defaultStageId,
@@ -225,6 +227,7 @@ export default function AddDealModal({ defaultStageId, companies, contacts, mana
     e.preventDefault();
     if (!form.title.trim()) return;
     onAdd({
+      funnelId,
       title: form.title,
       stageId: form.stageId,
       amount: Number(form.amount) || 0,
@@ -268,7 +271,7 @@ export default function AddDealModal({ defaultStageId, companies, contacts, mana
             <div>
               <label className={lbl}>Этап</label>
               <select value={form.stageId} onChange={e => set('stageId', e.target.value)} className={inp}>
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {funnelStages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
 

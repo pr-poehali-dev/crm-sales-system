@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Deal, Stage, Company, Course, Manager, formatAmount, stages as allStages, sourceOptions } from '@/data/crm';
+import { useState, useEffect } from 'react';
+import { Deal, Stage, Company, Course, Manager, formatAmount, sourceOptions } from '@/data/crm';
 import DealCard from './DealCard';
 import Icon from '@/components/ui/icon';
 
@@ -103,6 +103,9 @@ export default function FunnelView({ deals, stages, companies, courses, managers
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<FunnelFilters>(emptyFilters);
 
+  // Сброс фильтров при смене воронки
+  useEffect(() => { setFilters(emptyFilters); }, [stages]);
+
   const getCompanyName = (companyId: string) => companies.find(c => c.id === companyId)?.name ?? '';
 
   // collect all tags from deals
@@ -195,7 +198,7 @@ export default function FunnelView({ deals, stages, companies, courses, managers
 
             <PillGroup
               label="Этап"
-              options={allStages.map(s => ({ value: s.id, label: s.name }))}
+              options={stages.map(s => ({ value: s.id, label: s.name }))}
               selected={filters.stages}
               onChange={v => upd({ stages: v })}
             />

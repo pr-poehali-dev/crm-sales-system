@@ -227,7 +227,7 @@ def handler(event: dict, context) -> dict:
         if entity == "deals":
             if method == "GET":
                 rows = qry(cur, f"""
-                    SELECT id,title,stage_id,amount,source,course_ids,student_count,
+                    SELECT id,title,funnel_id,stage_id,amount,source,course_ids,student_count,
                            start_date,end_date,account_manager_id,invoice_number,
                            invoice_date,payment_date,company_id,contact_ids,history,tags,created_at,lost_reason
                     FROM {S}.deals ORDER BY created_at DESC
@@ -236,16 +236,16 @@ def handler(event: dict, context) -> dict:
             if method == "POST":
                 d = body
                 exe(cur, f"""
-                    INSERT INTO {S}.deals (id,title,stage_id,amount,source,course_ids,student_count,
+                    INSERT INTO {S}.deals (id,title,funnel_id,stage_id,amount,source,course_ids,student_count,
                         start_date,end_date,account_manager_id,invoice_number,invoice_date,
                         payment_date,company_id,contact_ids,history,tags,created_at,lost_reason)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """, _deal_params(d))
                 return ok({"id": d["id"]}, 201)
             if method == "PUT" and row_id:
                 d = body
                 exe(cur, f"""
-                    UPDATE {S}.deals SET title=%s,stage_id=%s,amount=%s,source=%s,
+                    UPDATE {S}.deals SET title=%s,funnel_id=%s,stage_id=%s,amount=%s,source=%s,
                         course_ids=%s,student_count=%s,start_date=%s,end_date=%s,
                         account_manager_id=%s,invoice_number=%s,invoice_date=%s,
                         payment_date=%s,company_id=%s,contact_ids=%s,history=%s,tags=%s,lost_reason=%s
@@ -264,7 +264,9 @@ def handler(event: dict, context) -> dict:
 
 def _deal_dict(r):
     return {
-        "id": r["id"], "title": r["title"], "stageId": r["stage_id"],
+        "id": r["id"], "title": r["title"],
+        "funnelId": r["funnel_id"] or "academy",
+        "stageId": r["stage_id"],
         "amount": float(r["amount"]), "source": r["source"],
         "courseIds": r["course_ids"] or [], "studentCount": r["student_count"],
         "startDate": r["start_date"], "endDate": r["end_date"],
@@ -279,7 +281,8 @@ def _deal_dict(r):
 
 def _deal_params(d):
     return (
-        d["id"], d["title"], d.get("stageId","base"), float(d.get("amount",0)),
+        d["id"], d["title"], d.get("funnelId","academy"), d.get("stageId","base"),
+        float(d.get("amount",0)),
         d.get("source",""), json.dumps(d.get("courseIds",[])),
         int(d.get("studentCount",0)), d.get("startDate",""), d.get("endDate",""),
         d.get("accountManagerId") or None, d.get("invoiceNumber",""),
@@ -292,7 +295,8 @@ def _deal_params(d):
 
 def _deal_update_params(d, row_id):
     return (
-        d["title"], d.get("stageId","base"), float(d.get("amount",0)),
+        d["title"], d.get("funnelId","academy"), d.get("stageId","base"),
+        float(d.get("amount",0)),
         d.get("source",""), json.dumps(d.get("courseIds",[])),
         int(d.get("studentCount",0)), d.get("startDate",""), d.get("endDate",""),
         d.get("accountManagerId") or None, d.get("invoiceNumber",""),

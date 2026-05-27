@@ -1,0 +1,1 @@
+ALTER TABLE t_p92580427_crm_sales_system.deals ADD COLUMN IF NOT EXISTS funnel_id TEXT NOT NULL DEFAULT 'academy';

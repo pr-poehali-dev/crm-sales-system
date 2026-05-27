@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Deal, Company, Contact, Manager, Course,
   initialManagers, initialCourses,
-  stages, formatAmount,
+  funnels, formatAmount,
 } from '@/data/crm';
 import { api } from '@/lib/api';
 import FunnelView from '@/components/crm/FunnelView';
@@ -28,6 +28,8 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
 
   const [view, setView] = useState<View>('funnel');
+  const [activeFunnelId, setActiveFunnelId] = useState<string>('academy');
+  const [funnelDropdownOpen, setFunnelDropdownOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [addModalStageId, setAddModalStageId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -191,8 +193,9 @@ export default function Index() {
     setView('companies');
   };
 
+  const activeFunnel = funnels.find(f => f.id === activeFunnelId) ?? funnels[0];
+
   const navItems: { id: View; label: string; icon: string }[] = [
-    { id: 'funnel',    label: 'Воронка',   icon: 'Columns3'    },
     { id: 'deals',     label: 'Сделки',    icon: 'Briefcase'   },
     { id: 'tasks',     label: 'Задачи',    icon: 'CheckSquare' },
     { id: 'companies', label: 'Компании',  icon: 'Building2'   },
@@ -249,6 +252,36 @@ export default function Index() {
             </div>
 
             <nav className="flex items-center gap-0.5">
+              {/* Воронки — выпадающий список */}
+              <div className="relative">
+                <button
+                  onClick={() => { setView('funnel'); setFunnelDropdownOpen(p => !p); }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-150 ${view === 'funnel' ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                >
+                  <Icon name="Columns3" size={13} />
+                  <span className="hidden sm:inline">{activeFunnel.name}</span>
+                  <Icon name={funnelDropdownOpen ? 'ChevronUp' : 'ChevronDown'} size={11} className="hidden sm:block" />
+                </button>
+                {funnelDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setFunnelDropdownOpen(false)} />
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-40 min-w-[220px] py-1">
+                      {funnels.map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => { setActiveFunnelId(f.id); setFunnelDropdownOpen(false); setView('funnel'); }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-[13px] text-left hover:bg-slate-50 transition-colors ${f.id === activeFunnelId ? 'text-slate-900 font-medium' : 'text-slate-600'}`}
+                        >
+                          {f.id === activeFunnelId && <Icon name="Check" size={11} className="text-slate-900 flex-shrink-0" />}
+                          {f.id !== activeFunnelId && <span className="w-[11px] flex-shrink-0" />}
+                          {f.name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
               {navItems.map(item => (
                 <button key={item.id} onClick={() => setView(item.id)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-150 relative ${view === item.id ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>
@@ -311,7 +344,9 @@ export default function Index() {
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5">
         {view === 'funnel' && (
           <FunnelView
-            deals={deals} stages={stages} companies={companies} courses={courses} managers={managers}
+            deals={deals.filter(d => (d.funnelId ?? 'academy') === activeFunnelId)}
+            stages={activeFunnel.stages}
+            companies={companies} courses={courses} managers={managers}
             onDealClick={setSelectedDeal}
             onStageChange={async (dealId, stageId) => {
               setDeals(prev => prev.map(d => {
@@ -370,6 +405,8 @@ export default function Index() {
       {addModalStageId && (
         <AddDealModal
           defaultStageId={addModalStageId}
+          funnelId={activeFunnelId}
+          funnelStages={activeFunnel.stages}
           companies={companies} contacts={contacts} managers={managers} courses={courses}
           onClose={() => setAddModalStageId(null)}
           onAdd={handleAddDeal}

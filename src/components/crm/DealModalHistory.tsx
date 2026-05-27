@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Deal, HistoryItem, HistoryTask, TaskPriority, taskPriorityLabel, stages } from '@/data/crm';
+import { Deal, HistoryItem, HistoryTask, TaskPriority, taskPriorityLabel, stages, stagesDiag } from '@/data/crm';
 import Icon from '@/components/ui/icon';
 import { formatDt, taskPriorityStyle } from './DealModalPrimitives';
+
+const allStages = [...stages, ...stagesDiag];
 
 // ─── Task edit form ───────────────────────────────────────────────────────
 function TaskEditForm({ task, onSave, onCancel }: {
@@ -277,8 +279,8 @@ export function DealModalHistoryTab({ deal, onUpdate }: DealModalHistoryTabProps
           {sortedActiveTasks.length > 0 && <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Лента</p>}
           {restHistory.map(item => {
             if (item.type === 'stage_change') {
-              const from = stages.find(s => s.id === item.fromStageId);
-              const to = stages.find(s => s.id === item.toStageId);
+              const from = allStages.find(s => s.id === item.fromStageId);
+              const to = allStages.find(s => s.id === item.toStageId);
               return (
                 <div key={item.id} className="flex items-center gap-2 text-xs text-slate-500 py-1">
                   <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">

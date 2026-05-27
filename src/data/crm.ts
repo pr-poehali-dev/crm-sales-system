@@ -1,6 +1,7 @@
 // ─── Stages ────────────────────────────────────────────────────────────────
 export type Stage = { id: string; name: string; color: string };
 
+// Воронка «Академия продажи»
 export const stages: Stage[] = [
   { id: 'base',            name: 'База',                      color: '#cbd5e1' },
   { id: 'new_lead',        name: 'Новый лид',                 color: '#93c5fd' },
@@ -13,6 +14,26 @@ export const stages: Stage[] = [
   { id: 'invoice_sent',    name: 'Счет отправлен',            color: '#fde68a' },
   { id: 'done',            name: 'Успешно реализовано',       color: '#4ade80' },
   { id: 'lost',            name: 'Закрыто и нереализовано',   color: '#fda4af' },
+];
+
+// Воронка «Диагностическое тестирование»
+export const stagesDiag: Stage[] = [
+  { id: 'diag_new_lead',      name: 'Новый лид',                  color: '#93c5fd' },
+  { id: 'diag_in_work',       name: 'Взято в работу',             color: '#86efac' },
+  { id: 'diag_form_sent',     name: 'Отправлена форма',           color: '#fcd34d' },
+  { id: 'diag_access_sent',   name: 'Отправлены доступы',         color: '#f9a8d4' },
+  { id: 'diag_tests_done',    name: 'Тесты прошли',               color: '#a5b4fc' },
+  { id: 'diag_meeting',       name: 'Проведение встречи',         color: '#6ee7b7' },
+  { id: 'diag_to_sale',       name: 'Переход в продажу',          color: '#4ade80' },
+  { id: 'diag_lost',          name: 'Закрыто и нереализовано',    color: '#fda4af' },
+];
+
+// ─── Funnels ───────────────────────────────────────────────────────────────
+export type Funnel = { id: string; name: string; stages: Stage[] };
+
+export const funnels: Funnel[] = [
+  { id: 'academy',     name: 'Академия продажи',          stages },
+  { id: 'diagnostics', name: 'Диагностическое тестирование', stages: stagesDiag },
 ];
 
 // ─── Course ────────────────────────────────────────────────────────────────
@@ -87,6 +108,7 @@ export type HistoryItem = HistoryComment | HistoryTask | HistoryStageChange;
 export type Deal = {
   id: string;
   title: string;
+  funnelId: string;
   stageId: string;
   amount: number;
   source: string;
@@ -185,6 +207,7 @@ export const initialDeals: Deal[] = [
   {
     id: 'd1',
     title: 'Корпоративное обучение Python',
+    funnelId: 'academy',
     stageId: 'qualify',
     amount: 450000,
     source: 'Холодный звонок',
@@ -209,6 +232,7 @@ export const initialDeals: Deal[] = [
   {
     id: 'd2',
     title: 'Обучение команды дизайнеров',
+    funnelId: 'academy',
     stageId: 'new_lead',
     amount: 120000,
     source: 'Сайт',
@@ -229,6 +253,7 @@ export const initialDeals: Deal[] = [
   {
     id: 'd3',
     title: 'PM обучение топ-менеджеров',
+    funnelId: 'academy',
     stageId: 'contract_sent',
     amount: 780000,
     source: 'Рекомендация',

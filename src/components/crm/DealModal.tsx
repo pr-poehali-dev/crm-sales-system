@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Deal, Company, Contact, Manager, Course, HistoryItem,
-  stages,
+  funnels, stages,
 } from '@/data/crm';
 import Icon from '@/components/ui/icon';
 import {
@@ -43,6 +43,8 @@ export default function DealModal({
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [showNewContact, setShowNewContact] = useState(false);
   const [showNewCourse, setShowNewCourse] = useState(false);
+
+  const dealStages = funnels.find(f => f.id === (deal.funnelId ?? 'academy'))?.stages ?? stages;
 
   const company = companies.find(c => c.id === deal.companyId);
 
@@ -104,7 +106,7 @@ export default function DealModal({
         {/* Stage selector */}
         <div className="px-5 py-2 border-b border-slate-100 flex-shrink-0 overflow-x-auto">
           <div className="flex gap-1 min-w-max">
-            {stages.map(stage => (
+            {dealStages.map(stage => (
               <button key={stage.id} onClick={() => handleStageChange(stage.id)}
                 className={`text-[11px] px-2.5 py-1 rounded-full border transition-all whitespace-nowrap ${deal.stageId === stage.id ? 'border-slate-900 bg-slate-900 text-white font-medium' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}>
                 {stage.name}
