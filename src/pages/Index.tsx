@@ -193,7 +193,6 @@ export default function Index() {
     URL.revokeObjectURL(url);
   };
 
-  const xlsxInputRef = useRef<HTMLInputElement>(null);
   const handleImportXlsx = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
