@@ -170,6 +170,29 @@ export default function Index() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleExportXlsx = async () => {
+    const blob = await api.exportXlsx();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `deals_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const xlsxInputRef = useRef<HTMLInputElement>(null);
+  const handleImportXlsx = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    const result = await api.importXlsx(file);
+    setImportResult(`Импортировано ${result.imported} сделок`);
+    await loadAll();
+    setImporting(false);
+    if (xlsxInputRef.current) xlsxInputRef.current.value = '';
+  };
+
   const totalPipeline = deals.filter(d => d.stageId !== 'done').reduce((s, d) => s + d.amount, 0);
   const wonTotal = deals.filter(d => d.stageId === 'done').reduce((s, d) => s + d.amount, 0);
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -314,11 +337,22 @@ export default function Index() {
                   <Icon name="Download" size={13} />
                   <span className="hidden xl:inline">CSV</span>
                 </button>
+                <button onClick={handleExportXlsx} title="Экспорт в XLSX"
+                  className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-md transition-colors flex items-center gap-1 text-xs">
+                  <Icon name="FileSpreadsheet" size={13} />
+                  <span className="hidden xl:inline">XLSX</span>
+                </button>
                 <label title="Импорт из CSV"
                   className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors cursor-pointer flex items-center gap-1 text-xs">
                   <Icon name={importing ? 'Loader' : 'Upload'} size={13} className={importing ? 'animate-spin' : ''} />
-                  <span className="hidden xl:inline">Импорт</span>
+                  <span className="hidden xl:inline">CSV</span>
                   <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportFile} />
+                </label>
+                <label title="Импорт из XLSX"
+                  className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer flex items-center gap-1 text-xs">
+                  <Icon name={importing ? 'Loader' : 'Upload'} size={13} className={importing ? 'animate-spin' : ''} />
+                  <span className="hidden xl:inline">XLSX</span>
+                  <input ref={xlsxInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportXlsx} />
                 </label>
               </div>
             </div>

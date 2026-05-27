@@ -7,8 +7,11 @@ import os
 import io
 import csv
 import time
+import base64
 import psycopg2
 import psycopg2.extras
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
 
 S = "t_p92580427_crm_sales_system"
 CORS = {
@@ -103,6 +106,108 @@ def handler(event: dict, context) -> dict:
                             "Content-Disposition": "attachment; filename=deals.csv"},
                 "body": buf.getvalue(),
             }
+
+        # ── EXPORT XLSX ──────────────────────────────────────────────────────
+        if entity == "export_xlsx" and method == "GET":
+            rows = qry(cur, f"""
+                SELECT d.id, d.title, d.stage_id, d.amount, d.source,
+                       d.course_ids, d.student_count, d.start_date, d.end_date,
+                       COALESCE(d.account_manager_id,'') as account_manager_id,
+                       d.invoice_number, d.invoice_date, d.payment_date,
+                       COALESCE(d.company_id,'') as company_id,
+                       d.contact_ids, d.tags, d.created_at,
+                       COALESCE(c.name,'') as company_name,
+                       COALESCE(m.name,'') as manager_name
+                FROM {S}.deals d
+                LEFT JOIN {S}.companies c ON c.id = d.company_id
+                LEFT JOIN {S}.managers m ON m.id = d.account_manager_id
+                ORDER BY d.created_at
+            """)
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Сделки"
+            headers = ["ID", "Название", "Этап", "Сумма", "Источник",
+                       "Курсы (ID)", "Студентов", "Дата старта", "Дата окончания",
+                       "Менеджер (ID)", "Номер счёта", "Дата счёта", "Дата оплаты",
+                       "Компания (ID)", "Контакты (ID)", "Теги", "Создана",
+                       "Компания", "Менеджер"]
+            ws.append(headers)
+            hfill = PatternFill("solid", fgColor="1E293B")
+            hfont = Font(bold=True, color="FFFFFF")
+            for cell in ws[1]:
+                cell.fill = hfill
+                cell.font = hfont
+                cell.alignment = Alignment(horizontal="center")
+            for r in rows:
+                ws.append([
+                    r["id"], r["title"], r["stage_id"], r["amount"], r["source"],
+                    ",".join([x for x in (r["course_ids"] or []) if x is not None]),
+                    r["student_count"], str(r["start_date"] or ""), str(r["end_date"] or ""),
+                    r["account_manager_id"], r["invoice_number"],
+                    str(r["invoice_date"] or ""), str(r["payment_date"] or ""), r["company_id"],
+                    ",".join([x for x in (r["contact_ids"] or []) if x is not None]),
+                    ",".join([x for x in (r["tags"] or []) if x is not None]),
+                    str(r["created_at"] or ""), r["company_name"], r["manager_name"],
+                ])
+            for col in ws.columns:
+                ws.column_dimensions[col[0].column_letter].width = max(
+                    len(str(col[0].value or "")), 
+                    max((len(str(c.value or "")) for c in col[1:]), default=0)
+                ) + 2
+            buf = io.BytesIO()
+            wb.save(buf)
+            buf.seek(0)
+            return {
+                "statusCode": 200,
+                "headers": {**CORS,
+                            "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            "Content-Disposition": "attachment; filename=deals.xlsx"},
+                "body": base64.b64encode(buf.getvalue()).decode(),
+                "isBase64Encoded": True,
+            }
+
+        # ── IMPORT XLSX ──────────────────────────────────────────────────────
+        if entity == "import_xlsx" and method == "POST":
+            xlsx_b64 = body.get("xlsx", "")
+            wb = openpyxl.load_workbook(io.BytesIO(base64.b64decode(xlsx_b64)))
+            ws = wb.active
+            rows_iter = ws.iter_rows(values_only=True)
+            header_row = next(rows_iter, None)
+            if not header_row:
+                return ok({"imported": 0})
+            col_map = {str(v).strip(): i for i, v in enumerate(header_row) if v is not None}
+            def gc(row, name, default=""):
+                i = col_map.get(name)
+                return str(row[i] or "") if i is not None and i < len(row) else default
+            imported = 0
+            for row in rows_iter:
+                title = gc(row, "Название").strip()
+                if not title:
+                    continue
+                did = gc(row, "ID") or f"imp_{int(time.time()*1000)}_{imported}"
+                exe(cur, f"""
+                    INSERT INTO {S}.deals (id,title,stage_id,amount,source,course_ids,
+                        student_count,start_date,end_date,account_manager_id,
+                        invoice_number,invoice_date,payment_date,company_id,
+                        contact_ids,tags,created_at,history)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'[]')
+                    ON CONFLICT (id) DO UPDATE SET title=EXCLUDED.title,
+                        stage_id=EXCLUDED.stage_id,amount=EXCLUDED.amount
+                """, (
+                    did, title, gc(row, "Этап") or "base",
+                    float(gc(row, "Сумма") or 0), gc(row, "Источник"),
+                    json.dumps([x for x in gc(row, "Курсы (ID)").split(",") if x]),
+                    int(gc(row, "Студентов") or 0),
+                    gc(row, "Дата старта"), gc(row, "Дата окончания"),
+                    gc(row, "Менеджер (ID)") or None,
+                    gc(row, "Номер счёта"), gc(row, "Дата счёта"),
+                    gc(row, "Дата оплаты"), gc(row, "Компания (ID)") or None,
+                    json.dumps([x for x in gc(row, "Контакты (ID)").split(",") if x]),
+                    json.dumps([x for x in gc(row, "Теги").split(",") if x]),
+                    gc(row, "Создана"),
+                ))
+                imported += 1
+            return ok({"imported": imported})
 
         # ── IMPORT CSV ───────────────────────────────────────────────────────
         if entity == "import" and method == "POST":

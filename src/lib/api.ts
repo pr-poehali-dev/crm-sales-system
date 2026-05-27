@@ -46,4 +46,16 @@ export const api = {
 
   exportCsv: () => request<string>('export'),
   importCsv: (csv: string) => request<{ imported: number }>('import', 'POST', { csv }),
+
+  exportXlsx: async (): Promise<Blob> => {
+    const params = new URLSearchParams({ e: 'export_xlsx' });
+    const res = await fetch(`${BASE}?${params}`);
+    if (!res.ok) throw new Error(`API GET export_xlsx → ${res.status}`);
+    return res.blob();
+  },
+  importXlsx: async (file: File): Promise<{ imported: number }> => {
+    const buf = await file.arrayBuffer();
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+    return request<{ imported: number }>('import_xlsx', 'POST', { xlsx: b64 });
+  },
 };
