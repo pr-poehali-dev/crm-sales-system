@@ -253,7 +253,7 @@ export default function TasksView({ deals, companies, onUpdateDeal, onDealClick 
               <TaskCard
                 key={`${task.dealId}-${task.id}`}
                 task={task}
-                isOverdue={new Date(task.dueAt) < now && !task.done}
+                isOverdue={task.dueAt.slice(0, 10) < today && !task.done}
                 onComplete={handleComplete}
                 onUndone={handleUndone}
                 onSaveEdit={handleSaveEdit}
