@@ -44,7 +44,8 @@ export function TaskItem({ item, completeTask, undoneTask, saveTask }: {
   undoneTask: (id: string) => void;
   saveTask: (t: HistoryTask) => void;
 }) {
-  const isOverdue = !item.done && new Date(item.dueAt) < new Date();
+  const today = new Date().toISOString().slice(0, 10);
+  const isOverdue = !item.done && item.dueAt.slice(0, 10) < today;
   const [expanded, setExpanded] = useState(false);
   const [result, setResult] = useState('');
   const [repeat, setRepeat] = useState(false);

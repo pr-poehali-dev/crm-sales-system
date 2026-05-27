@@ -11,7 +11,7 @@ export default function TasksView({ deals, companies, onUpdateDeal, onDealClick 
   const [filterDeal, setFilterDeal] = useState<string>('all');
   const [showDone, setShowDone] = useState(true);
 
-  const now = new Date();
+  const today = new Date().toISOString().slice(0, 10);
 
   // ── Flatten all tasks from all deals ──────────────────────────────────────
   const allTasks = useMemo<FlatTask[]>(() => {
@@ -34,15 +34,15 @@ export default function TasksView({ deals, companies, onUpdateDeal, onDealClick 
   }, [deals, companies]);
 
   // ── Categorise ────────────────────────────────────────────────────────────
-  const overdueTasks  = useMemo(() => allTasks.filter(t => !t.done && new Date(t.dueAt) < now), [allTasks]);
-  const activeTasks   = useMemo(() => allTasks.filter(t => !t.done && new Date(t.dueAt) >= now), [allTasks]);
+  const overdueTasks  = useMemo(() => allTasks.filter(t => !t.done && t.dueAt.slice(0, 10) < today), [allTasks]);
+  const activeTasks   = useMemo(() => allTasks.filter(t => !t.done && t.dueAt.slice(0, 10) >= today), [allTasks]);
   const doneTasks     = useMemo(() => allTasks.filter(t => t.done), [allTasks]);
 
   // ── Sort helper ───────────────────────────────────────────────────────────
   function sortTasks(list: FlatTask[]): FlatTask[] {
     return [...list].sort((a, b) => {
-      const aOverdue = new Date(a.dueAt) < now && !a.done;
-      const bOverdue = new Date(b.dueAt) < now && !b.done;
+      const aOverdue = a.dueAt.slice(0, 10) < today && !a.done;
+      const bOverdue = b.dueAt.slice(0, 10) < today && !b.done;
       if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
       return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
     });

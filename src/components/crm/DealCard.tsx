@@ -34,8 +34,9 @@ const priorityRing: Record<string, string> = {
 export default function DealCard({ deal, companyName, onClick, dragging }: DealCardProps) {
   const topPriority = getTopTaskPriority(deal);
   const hasTasks = deal.history.some(h => h.type === 'task');
+  const today = new Date().toISOString().slice(0, 10);
   const hasOverdue = deal.history.some(
-    (h): h is HistoryTask => h.type === 'task' && !h.done && new Date(h.dueAt) < new Date()
+    (h): h is HistoryTask => h.type === 'task' && !h.done && h.dueAt.slice(0, 10) < today
   );
 
   const noActiveTasks = !deal.history.some(h => h.type === 'task' && !(h as HistoryTask).done);

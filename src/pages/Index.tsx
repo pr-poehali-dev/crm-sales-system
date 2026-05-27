@@ -172,8 +172,9 @@ export default function Index() {
 
   const totalPipeline = deals.filter(d => d.stageId !== 'done').reduce((s, d) => s + d.amount, 0);
   const wonTotal = deals.filter(d => d.stageId === 'done').reduce((s, d) => s + d.amount, 0);
+  const todayStr = new Date().toISOString().slice(0, 10);
   const overdueCount = deals.reduce((acc, deal) =>
-    acc + deal.history.filter(h => h.type === 'task' && !(h as { done: boolean }).done && new Date((h as { dueAt: string }).dueAt) < new Date()).length, 0
+    acc + deal.history.filter(h => h.type === 'task' && !(h as { done: boolean }).done && (h as { dueAt: string }).dueAt.slice(0, 10) < todayStr).length, 0
   );
 
   const openDeal = (dealId: string) => {
