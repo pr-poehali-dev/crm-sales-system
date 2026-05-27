@@ -9,7 +9,7 @@ const allStages = [...stages, ...stagesDiag];
 function TaskEditForm({ task, onSave, onCancel }: {
   task: HistoryTask; onSave: (updated: HistoryTask) => void; onCancel: () => void;
 }) {
-  const [form, setForm] = useState({ text: task.text, dueAt: task.dueAt ? task.dueAt.slice(0, 16) : '', priority: task.priority });
+  const [form, setForm] = useState({ text: task.text, dueAt: task.dueAt ? task.dueAt.slice(0, 10) : '', priority: task.priority });
   return (
     <div className="mt-2 space-y-2 bg-slate-50 rounded-lg p-3 border border-slate-200">
       <textarea value={form.text} onChange={e => setForm(p => ({ ...p, text: e.target.value }))} rows={2}
@@ -17,7 +17,7 @@ function TaskEditForm({ task, onSave, onCancel }: {
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Срок</label>
-          <input type="datetime-local" value={form.dueAt} onChange={e => setForm(p => ({ ...p, dueAt: e.target.value }))}
+          <input type="date" value={form.dueAt} onChange={e => setForm(p => ({ ...p, dueAt: e.target.value }))}
             className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 focus:outline-none focus:border-slate-400 bg-white" />
         </div>
         <div>
@@ -48,7 +48,7 @@ export function TaskItem({ item, completeTask, undoneTask, saveTask }: {
   const [expanded, setExpanded] = useState(false);
   const [result, setResult] = useState('');
   const [repeat, setRepeat] = useState(false);
-  const [repeatDate, setRepeatDate] = useState(item.dueAt ? item.dueAt.slice(0, 16) : '');
+  const [repeatDate, setRepeatDate] = useState(item.dueAt ? item.dueAt.slice(0, 10) : '');
   const [editing, setEditing] = useState(false);
 
   const handleComplete = () => {
@@ -133,7 +133,7 @@ export function TaskItem({ item, completeTask, undoneTask, saveTask }: {
             </label>
             {repeat && (
               <input
-                type="datetime-local"
+                type="date"
                 value={repeatDate}
                 onChange={e => setRepeatDate(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-slate-400 bg-white"
@@ -241,7 +241,7 @@ export function DealModalHistoryTab({ deal, onUpdate }: DealModalHistoryTabProps
           <div className="mt-2 grid grid-cols-2 gap-2">
             <div>
               <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Срок</label>
-              <input type="datetime-local" value={taskDueAt} onChange={e => setTaskDueAt(e.target.value)}
+              <input type="date" value={taskDueAt} onChange={e => setTaskDueAt(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 focus:outline-none focus:border-slate-400 bg-white" />
             </div>
             <div>

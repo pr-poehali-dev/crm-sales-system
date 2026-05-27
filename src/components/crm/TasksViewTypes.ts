@@ -32,14 +32,17 @@ export function formatDt(iso: string): string {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
-export function toDatetimeLocal(iso: string): string {
+export function toDateLocal(iso: string): string {
   if (!iso) return '';
-  return iso.slice(0, 16);
+  return iso.slice(0, 10);
+}
+
+/** @deprecated use toDateLocal */
+export function toDatetimeLocal(iso: string): string {
+  return toDateLocal(iso);
 }
 
 // ─── Priority styling ─────────────────────────────────────────────────────────

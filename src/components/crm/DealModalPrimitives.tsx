@@ -74,7 +74,7 @@ export function SourceField({ value, onChange }: { value: string; onChange: (v: 
 
 export function formatDt(iso: string) {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export function formatDate(s: string) {

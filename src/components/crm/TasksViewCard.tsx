@@ -87,7 +87,7 @@ export function TaskCard({ task, isOverdue, onComplete, onUndone, onSaveEdit, on
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Срок</label>
-                  <input type="datetime-local" value={form.dueAt} onChange={e => setForm(p => ({ ...p, dueAt: e.target.value }))} className={inp} />
+                  <input type="date" value={form.dueAt} onChange={e => setForm(p => ({ ...p, dueAt: e.target.value }))} className={inp} />
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Приоритет</label>
@@ -188,7 +188,7 @@ export function TaskCard({ task, isOverdue, onComplete, onUndone, onSaveEdit, on
             </label>
             {repeat && (
               <input
-                type="datetime-local"
+                type="date"
                 value={repeatDate}
                 onChange={e => setRepeatDate(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-slate-400 bg-white"

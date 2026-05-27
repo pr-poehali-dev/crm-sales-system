@@ -64,9 +64,7 @@ export default function DealCard({ deal, companyName, onClick, dragging }: DealC
               нет задач
             </span>
           )}
-          {!hasOverdue && !noActiveTasks && topPriority && (
-            <span className={`w-2 h-2 rounded-full ${priorityDot[topPriority]}`} title={`Задача: ${topPriority === 'high' ? 'высокий' : topPriority === 'medium' ? 'средний' : 'низкий'} приоритет`} />
-          )}
+
         </div>
       </div>
 
