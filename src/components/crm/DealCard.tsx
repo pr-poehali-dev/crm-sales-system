@@ -38,6 +38,8 @@ export default function DealCard({ deal, companyName, onClick, dragging }: DealC
     (h): h is HistoryTask => h.type === 'task' && !h.done && new Date(h.dueAt) < new Date()
   );
 
+  const noActiveTasks = !deal.history.some(h => h.type === 'task' && !(h as HistoryTask).done);
+
   return (
     <div
       onClick={() => onClick(deal)}
@@ -45,7 +47,7 @@ export default function DealCard({ deal, companyName, onClick, dragging }: DealC
         group bg-white border rounded-lg p-3 cursor-pointer
         hover:shadow-sm transition-all duration-150 select-none
         ${dragging ? 'opacity-40 scale-95' : ''}
-        ${topPriority ? `border-slate-200 ring-2 ${priorityRing[topPriority]}` : 'border-slate-200 hover:border-slate-300'}
+        ${hasOverdue ? 'border-rose-200 ring-2 ring-rose-200 bg-rose-50/40' : noActiveTasks ? 'border-amber-200 ring-2 ring-amber-200 bg-amber-50/40' : 'border-slate-200 hover:border-slate-300'}
       `}
     >
       <div className="flex items-start justify-between gap-1.5 mb-1.5">
@@ -53,18 +55,17 @@ export default function DealCard({ deal, companyName, onClick, dragging }: DealC
           {deal.title}
         </span>
 
-        {/* Priority indicator from tasks */}
         <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-          {topPriority && (
-            <span className={`w-2 h-2 rounded-full ${priorityDot[topPriority]}`} title={`Задача: ${topPriority === 'high' ? 'высокий' : topPriority === 'medium' ? 'средний' : 'низкий'} приоритет`} />
+          {hasOverdue && (
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="Есть просроченные задачи" />
           )}
-          {!hasTasks && (
-            <span className="text-[9px] text-slate-300 font-medium leading-none border border-slate-200 rounded px-1 py-0.5" title="Нет задач">
+          {!hasOverdue && noActiveTasks && (
+            <span className="text-[9px] text-amber-600 font-medium leading-none border border-amber-300 rounded px-1 py-0.5 bg-amber-50" title="Нет активных задач">
               нет задач
             </span>
           )}
-          {hasOverdue && (
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="Есть просроченные задачи" />
+          {!hasOverdue && !noActiveTasks && topPriority && (
+            <span className={`w-2 h-2 rounded-full ${priorityDot[topPriority]}`} title={`Задача: ${topPriority === 'high' ? 'высокий' : topPriority === 'medium' ? 'средний' : 'низкий'} приоритет`} />
           )}
         </div>
       </div>
@@ -90,19 +91,12 @@ export default function DealCard({ deal, companyName, onClick, dragging }: DealC
         <span className="font-mono text-[12px] font-medium text-slate-800">
           {formatAmount(deal.amount)}
         </span>
-        <div className="flex items-center gap-2">
-          {deal.studentCount > 0 && (
-            <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-              <Icon name="Users" size={9} />
-              {deal.studentCount}
-            </span>
-          )}
-          {hasOverdue && (
-            <span className="text-[10px] text-rose-500 flex items-center gap-0.5 font-medium">
-              <Icon name="AlertCircle" size={10} />
-            </span>
-          )}
-        </div>
+        {deal.studentCount > 0 && (
+          <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+            <Icon name="Users" size={9} />
+            {deal.studentCount}
+          </span>
+        )}
       </div>
     </div>
   );
