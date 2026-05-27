@@ -35,7 +35,20 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+  const [ioMenuOpen, setIoMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xlsxInputRef = useRef<HTMLInputElement>(null);
+  const ioMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ioMenuRef.current && !ioMenuRef.current.contains(e.target as Node)) {
+        setIoMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -331,29 +344,48 @@ export default function Index() {
                 <p className="font-mono font-medium text-slate-800 text-[12px]">{formatAmount(wonTotal)}</p>
               </div>
               <div className="w-px h-7 bg-slate-200" />
-              <div className="flex items-center gap-1">
-                <button onClick={handleExport} title="Экспорт в CSV"
-                  className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors flex items-center gap-1 text-xs">
-                  <Icon name="Download" size={13} />
-                  <span className="hidden xl:inline">CSV</span>
+              <div className="relative" ref={ioMenuRef}>
+                <button
+                  onClick={() => setIoMenuOpen(v => !v)}
+                  className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors flex items-center gap-1 text-xs"
+                  title="Импорт / Экспорт"
+                >
+                  {importing
+                    ? <Icon name="Loader" size={13} className="animate-spin" />
+                    : <Icon name="ArrowUpDown" size={13} />}
+                  <span className="hidden xl:inline">Данные</span>
+                  <Icon name="ChevronDown" size={11} className={`transition-transform ${ioMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <button onClick={handleExportXlsx} title="Экспорт в XLSX"
-                  className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-md transition-colors flex items-center gap-1 text-xs">
-                  <Icon name="FileSpreadsheet" size={13} />
-                  <span className="hidden xl:inline">XLSX</span>
-                </button>
-                <label title="Импорт из CSV"
-                  className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors cursor-pointer flex items-center gap-1 text-xs">
-                  <Icon name={importing ? 'Loader' : 'Upload'} size={13} className={importing ? 'animate-spin' : ''} />
-                  <span className="hidden xl:inline">CSV</span>
-                  <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportFile} />
-                </label>
-                <label title="Импорт из XLSX"
-                  className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer flex items-center gap-1 text-xs">
-                  <Icon name={importing ? 'Loader' : 'Upload'} size={13} className={importing ? 'animate-spin' : ''} />
-                  <span className="hidden xl:inline">XLSX</span>
-                  <input ref={xlsxInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportXlsx} />
-                </label>
+
+                {ioMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1 text-xs">
+                    <p className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-slate-400 font-medium">Экспорт</p>
+                    <button onClick={() => { handleExport(); setIoMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-slate-700">
+                      <Icon name="Download" size={13} className="text-slate-400" />
+                      Скачать CSV
+                    </button>
+                    <button onClick={() => { handleExportXlsx(); setIoMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-slate-700">
+                      <Icon name="FileSpreadsheet" size={13} className="text-emerald-500" />
+                      Скачать XLSX
+                    </button>
+                    <div className="mx-3 my-1 border-t border-slate-100" />
+                    <p className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-slate-400 font-medium">Импорт</p>
+                    <label className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-slate-700 cursor-pointer">
+                      <Icon name="Upload" size={13} className="text-slate-400" />
+                      Загрузить CSV
+                      <input ref={fileInputRef} type="file" accept=".csv" className="hidden"
+                        onChange={e => { handleImportFile(e); setIoMenuOpen(false); }} />
+                    </label>
+                    <label className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-slate-700 cursor-pointer">
+                      <Icon name="Upload" size={13} className="text-emerald-500" />
+                      Загрузить XLSX
+                      <input ref={xlsxInputRef} type="file" accept=".xlsx" className="hidden"
+                        onChange={e => { handleImportXlsx(e); setIoMenuOpen(false); }} />
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
 
