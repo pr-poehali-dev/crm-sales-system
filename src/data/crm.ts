@@ -68,6 +68,8 @@ export type HistoryTask = {
   dueAt: string;
   done: boolean;
   priority: TaskPriority;
+  result?: string;
+  doneAt?: string;
 };
 
 export type HistoryStageChange = {

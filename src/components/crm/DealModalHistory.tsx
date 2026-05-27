@@ -36,47 +36,126 @@ function TaskEditForm({ task, onSave, onCancel }: {
 }
 
 // ─── TaskItem component ───────────────────────────────────────────────────
-export function TaskItem({ item, editingTaskId, setEditingTaskId, toggleTask, saveTask }: {
+export function TaskItem({ item, completeTask, undoneTask, saveTask }: {
   item: HistoryTask;
-  editingTaskId: string | null;
-  setEditingTaskId: (id: string | null) => void;
-  toggleTask: (id: string) => void;
+  completeTask: (id: string, result: string, duplicateDate?: string) => void;
+  undoneTask: (id: string) => void;
   saveTask: (t: HistoryTask) => void;
 }) {
   const isOverdue = !item.done && new Date(item.dueAt) < new Date();
-  const isEditing = editingTaskId === item.id;
+  const [expanded, setExpanded] = useState(false);
+  const [result, setResult] = useState('');
+  const [repeat, setRepeat] = useState(false);
+  const [repeatDate, setRepeatDate] = useState(item.dueAt ? item.dueAt.slice(0, 16) : '');
+  const [editing, setEditing] = useState(false);
+
+  const handleComplete = () => {
+    completeTask(item.id, result, repeat && repeatDate ? new Date(repeatDate).toISOString() : undefined);
+    setExpanded(false);
+    setResult('');
+    setRepeat(false);
+  };
+
   return (
-    <div className={`rounded-lg p-3 border ${isOverdue ? 'bg-rose-50 border-rose-200' : item.done ? 'bg-emerald-50 border-emerald-200 opacity-70' : 'bg-blue-50 border-blue-100'}`}>
-      <div className="flex items-start gap-2">
-        <button onClick={() => toggleTask(item.id)} className="mt-0.5 flex-shrink-0">
-          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${item.done ? 'bg-emerald-500 border-emerald-500' : isOverdue ? 'border-rose-400' : 'border-slate-300 hover:border-slate-500'}`}>
+    <div className={`rounded-lg border transition-all ${isOverdue ? 'bg-rose-50 border-rose-200' : item.done ? 'bg-emerald-50 border-emerald-200 opacity-70' : 'bg-blue-50 border-blue-100'}`}>
+
+      {/* Main row */}
+      <div className="flex items-start gap-2 p-3">
+        <button
+          onClick={() => item.done ? undoneTask(item.id) : setExpanded(p => !p)}
+          className="mt-0.5 flex-shrink-0"
+        >
+          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+            item.done ? 'bg-emerald-500 border-emerald-500' :
+            expanded ? 'border-slate-500' :
+            isOverdue ? 'border-rose-400 hover:border-rose-600' :
+            'border-slate-300 hover:border-slate-500'
+          }`}>
             {item.done && <Icon name="Check" size={10} className="text-white" />}
           </div>
         </button>
-        <div className="flex-1 min-w-0">
+
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => !item.done && !editing && setExpanded(p => !p)}>
           <div className="flex items-center gap-2 mb-0.5">
             <p className={`text-sm text-slate-800 flex-1 ${item.done ? 'line-through text-slate-400' : ''}`}>{item.text}</p>
             <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${taskPriorityStyle[item.priority]}`}>
               {taskPriorityLabel[item.priority]}
             </span>
           </div>
+          {item.done && item.result && (
+            <p className="text-xs text-slate-500 italic mb-0.5">Результат: {item.result}</p>
+          )}
           <div className="flex flex-wrap gap-3 text-[11px] text-slate-400">
             <span className="flex items-center gap-1"><Icon name="User" size={10} />{item.author}</span>
-            <span className="flex items-center gap-1"><Icon name="Clock" size={10} />{formatDt(item.createdAt)}</span>
             <span className={`flex items-center gap-1 font-medium ${isOverdue ? 'text-rose-600' : item.done ? 'text-emerald-600' : 'text-blue-600'}`}>
               <Icon name="CalendarClock" size={10} />
-              {item.done ? 'Выполнено' : isOverdue ? `Просрочено · ${formatDt(item.dueAt)}` : `До: ${formatDt(item.dueAt)}`}
+              {item.done ? `Выполнено${item.doneAt ? ' · ' + formatDt(item.doneAt) : ''}` : isOverdue ? `Просрочено · ${formatDt(item.dueAt)}` : `До: ${formatDt(item.dueAt)}`}
             </span>
           </div>
-          {isEditing && <TaskEditForm task={item} onSave={saveTask} onCancel={() => setEditingTaskId(null)} />}
+          {editing && <TaskEditForm task={item} onSave={t => { saveTask(t); setEditing(false); }} onCancel={() => setEditing(false)} />}
         </div>
+
         {!item.done && (
-          <button onClick={() => setEditingTaskId(isEditing ? null : item.id)}
-            className="flex-shrink-0 text-[11px] text-slate-400 hover:text-slate-700 border border-slate-200 rounded px-1.5 py-0.5 transition-colors">
+          <button
+            onClick={e => { e.stopPropagation(); setEditing(p => !p); setExpanded(false); }}
+            className="flex-shrink-0 p-1 text-slate-400 hover:text-slate-700 border border-transparent hover:border-slate-200 rounded transition-colors"
+          >
             <Icon name="Pencil" size={10} />
           </button>
         )}
       </div>
+
+      {/* Completion panel */}
+      {expanded && !item.done && !editing && (
+        <div className="border-t border-blue-100 px-3 pb-3 pt-2.5 space-y-2.5 bg-white/60 rounded-b-lg">
+          <div>
+            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-1.5">
+              Результат выполнения
+            </label>
+            <textarea
+              value={result}
+              onChange={e => setResult(e.target.value)}
+              placeholder="Напишите результат или комментарий..."
+              rows={2}
+              autoFocus
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white resize-none"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setRepeat(p => !p)}>
+              <div className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-colors ${repeat ? 'bg-slate-900 border-slate-900' : 'border-slate-300 hover:border-slate-500'}`}>
+                {repeat && <Icon name="Check" size={9} className="text-white" />}
+              </div>
+              <span className="text-xs text-slate-700">Повторить задачу</span>
+            </label>
+            {repeat && (
+              <input
+                type="datetime-local"
+                value={repeatDate}
+                onChange={e => setRepeatDate(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-slate-400 bg-white"
+              />
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleComplete}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-900 text-white rounded-lg hover:bg-slate-700 font-medium"
+            >
+              <Icon name="CheckCircle2" size={12} />
+              Выполнено
+            </button>
+            <button
+              onClick={() => { setExpanded(false); setResult(''); setRepeat(false); }}
+              className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-600 hover:border-slate-400"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -92,7 +171,6 @@ export function DealModalHistoryTab({ deal, onUpdate }: DealModalHistoryTabProps
   const [historyType, setHistoryType] = useState<'comment' | 'task'>('comment');
   const [taskDueAt, setTaskDueAt] = useState('');
   const [taskPriority, setTaskPriority] = useState<TaskPriority>('medium');
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const addHistory = () => {
     if (!historyText.trim()) return;
@@ -104,13 +182,37 @@ export function DealModalHistoryTab({ deal, onUpdate }: DealModalHistoryTabProps
     setHistoryText(''); setTaskDueAt(''); setTaskPriority('medium');
   };
 
-  const toggleTask = (itemId: string) =>
-    onUpdate({ ...deal, history: deal.history.map(h => h.id === itemId && h.type === 'task' ? { ...h, done: !h.done } : h) });
-
-  const saveTask = (updated: HistoryTask) => {
-    onUpdate({ ...deal, history: deal.history.map(h => h.id === updated.id ? updated : h) });
-    setEditingTaskId(null);
+  const completeTask = (itemId: string, result: string, duplicateDate?: string) => {
+    const updated = deal.history.map(h =>
+      h.id === itemId && h.type === 'task'
+        ? { ...h, done: true, result: result || undefined, doneAt: new Date().toISOString() }
+        : h
+    );
+    if (duplicateDate) {
+      const orig = deal.history.find(h => h.id === itemId) as HistoryTask | undefined;
+      if (orig) {
+        const newTask: HistoryTask = {
+          id: `h${Date.now()}`,
+          type: 'task',
+          text: orig.text,
+          author: orig.author,
+          createdAt: new Date().toISOString(),
+          dueAt: duplicateDate,
+          done: false,
+          priority: orig.priority,
+        };
+        onUpdate({ ...deal, history: [...updated, newTask] });
+        return;
+      }
+    }
+    onUpdate({ ...deal, history: updated });
   };
+
+  const undoneTask = (itemId: string) =>
+    onUpdate({ ...deal, history: deal.history.map(h => h.id === itemId && h.type === 'task' ? { ...h, done: false, result: undefined, doneAt: undefined } : h) });
+
+  const saveTask = (updated: HistoryTask) =>
+    onUpdate({ ...deal, history: deal.history.map(h => h.id === updated.id ? updated : h) });
 
   const activeTasks = deal.history.filter(h => h.type === 'task' && !(h as HistoryTask).done) as HistoryTask[];
   const restHistory = deal.history
@@ -157,19 +259,19 @@ export function DealModalHistoryTab({ deal, onUpdate }: DealModalHistoryTabProps
         </div>
       </div>
 
-      {/* Активные задачи — прикреплены вверху */}
+      {/* Active tasks */}
       {sortedActiveTasks.length > 0 && (
         <div className="space-y-2">
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Icon name="Pin" size={10} /> Активные задачи
           </p>
           {sortedActiveTasks.map(item => (
-            <TaskItem key={item.id} item={item} editingTaskId={editingTaskId} setEditingTaskId={setEditingTaskId} toggleTask={toggleTask} saveTask={saveTask} />
+            <TaskItem key={item.id} item={item} completeTask={completeTask} undoneTask={undoneTask} saveTask={saveTask} />
           ))}
         </div>
       )}
 
-      {/* Остальная история */}
+      {/* Rest of history */}
       {restHistory.length > 0 && (
         <div className="space-y-2">
           {sortedActiveTasks.length > 0 && <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Лента</p>}
@@ -192,7 +294,7 @@ export function DealModalHistoryTab({ deal, onUpdate }: DealModalHistoryTabProps
               );
             }
             if (item.type === 'task') {
-              return <TaskItem key={item.id} item={item as HistoryTask} editingTaskId={editingTaskId} setEditingTaskId={setEditingTaskId} toggleTask={toggleTask} saveTask={saveTask} />;
+              return <TaskItem key={item.id} item={item as HistoryTask} completeTask={completeTask} undoneTask={undoneTask} saveTask={saveTask} />;
             }
             return (
               <div key={item.id} className="bg-white border border-slate-200 rounded-lg p-3">

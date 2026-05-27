@@ -93,9 +93,9 @@ export default function TasksView({ deals, companies, onUpdateDeal, onDealClick 
     onUpdateDeal({ ...deal, history: updatedHistory });
   }
 
-  function handleToggleDone(task: FlatTask, duplicateDate?: string) {
-    updateTask(task, { done: !task.done });
-    if (!task.done && duplicateDate) {
+  function handleComplete(task: FlatTask, result: string, duplicateDate?: string) {
+    updateTask(task, { done: true, result: result || undefined, doneAt: new Date().toISOString() });
+    if (duplicateDate) {
       const deal = deals.find(d => d.id === task.dealId);
       if (!deal) return;
       const newTask: HistoryTask = {
@@ -110,6 +110,10 @@ export default function TasksView({ deals, companies, onUpdateDeal, onDealClick 
       };
       onUpdateDeal({ ...deal, history: [...deal.history, newTask] });
     }
+  }
+
+  function handleUndone(task: FlatTask) {
+    updateTask(task, { done: false, result: undefined, doneAt: undefined });
   }
 
   function handleSaveEdit(task: FlatTask, form: EditForm) {
@@ -250,7 +254,8 @@ export default function TasksView({ deals, companies, onUpdateDeal, onDealClick 
                 key={`${task.dealId}-${task.id}`}
                 task={task}
                 isOverdue={new Date(task.dueAt) < now && !task.done}
-                onToggleDone={handleToggleDone}
+                onComplete={handleComplete}
+                onUndone={handleUndone}
                 onSaveEdit={handleSaveEdit}
                 onDealClick={onDealClick}
               />
