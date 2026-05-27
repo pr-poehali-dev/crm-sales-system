@@ -102,7 +102,6 @@ export default function FunnelView({ deals, stages, companies, courses, managers
   const [overStageId, setOverStageId] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<FunnelFilters>(emptyFilters);
-  const [tagInput, setTagInput] = useState('');
 
   const getCompanyName = (companyId: string) => companies.find(c => c.id === companyId)?.name ?? '';
 
@@ -237,24 +236,6 @@ export default function FunnelView({ deals, stages, companies, courses, managers
                 onChange={v => upd({ tags: v })}
               />
             )}
-
-            <div>
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1.5">Теги (ввод)</p>
-              <div className="flex gap-1.5">
-                <input
-                  value={tagInput}
-                  onChange={e => setTagInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && tagInput.trim()) {
-                      upd({ tags: toggleArr(filters.tags, tagInput.trim()) });
-                      setTagInput('');
-                    }
-                  }}
-                  placeholder="Введите тег + Enter"
-                  className="flex-1 text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:border-slate-400"
-                />
-              </div>
-            </div>
 
             <div>
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1.5">Сумма (₽)</p>

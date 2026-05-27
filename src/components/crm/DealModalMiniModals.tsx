@@ -67,9 +67,9 @@ export function CompanyModal({ company, onClose, onSave }: {
 export function ContactModal({ contact, companies, onClose, onSave }: {
   contact: Contact | null; companies: Company[]; onClose: () => void; onSave: (c: Omit<Contact, 'id'> & { id?: string }) => void;
 }) {
-  const blank: Omit<Contact, 'id'> = { fullName: '', phones: [{ id: 'p_new', type: 'Рабочий', value: '' }], emails: [{ id: 'e_new', type: 'Рабочий', value: '' }], position: '', isDecisionMaker: false, companyId: '' };
+  const blank: Omit<Contact, 'id'> = { fullName: '', phones: [{ id: 'p_new', type: 'Рабочий', value: '' }], emails: [{ id: 'e_new', type: 'Рабочий', value: '' }], position: '', isDecisionMaker: false, companyId: '', telegram: '' };
   const [form, setForm] = useState<Omit<Contact, 'id'> & { id?: string }>(contact
-    ? { ...contact, phones: contact.phones.map(p => ({ ...p })), emails: contact.emails.map(e => ({ ...e })) }
+    ? { ...contact, phones: contact.phones.map(p => ({ ...p })), emails: contact.emails.map(e => ({ ...e })), telegram: contact.telegram ?? '' }
     : blank);
   const phoneTypes = ['Рабочий', 'Личный', 'Мобильный', 'Другой'];
   const emailTypes = ['Рабочий', 'Личный', 'Другой'];
@@ -120,6 +120,18 @@ export function ContactModal({ contact, companies, onClose, onSave }: {
             {form.emails.length > 1 && <button onClick={() => setForm(p => ({ ...p, emails: p.emails.filter(x => x.id !== em.id) }))}><Icon name="X" size={13} className="text-slate-400 hover:text-rose-500" /></button>}
           </div>
         ))}
+      </div>
+      <div>
+        <label className={modalLbl}>Telegram</label>
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-400 text-sm">@</span>
+          <input
+            value={form.telegram ?? ''}
+            onChange={e => setForm(p => ({ ...p, telegram: e.target.value.replace(/^@/, '') }))}
+            placeholder="username"
+            className={`${sInp} flex-1`}
+          />
+        </div>
       </div>
     </MiniModal>
   );
