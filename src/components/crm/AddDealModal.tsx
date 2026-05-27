@@ -221,7 +221,7 @@ export default function AddDealModal({ defaultStageId, funnelId, funnelStages, c
     return co;
   };
 
-  const companyContacts = localContacts.filter(c => c.companyId === form.companyId);
+  const companyContacts = form.companyId ? localContacts.filter(c => c.companyId === form.companyId) : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
