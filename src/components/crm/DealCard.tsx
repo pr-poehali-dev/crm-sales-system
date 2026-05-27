@@ -76,6 +76,16 @@ export default function DealCard({ deal, companyName, onClick, dragging }: DealC
         </div>
       )}
 
+      {deal.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {deal.tags.map(t => (
+            <span key={t} className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full leading-none">
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <span className="font-mono text-[12px] font-medium text-slate-800">
           {formatAmount(deal.amount)}

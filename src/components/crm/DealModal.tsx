@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
   Deal, Company, Contact, Manager, Course, HistoryItem,
-  stages, sourceOptions,
+  stages,
 } from '@/data/crm';
 import Icon from '@/components/ui/icon';
 import {
   formatDate, inpCls, Field, EditableText, EditableSelect, EditableDate,
-  TagEditor, CoursesDropdown,
+  TagEditor, CoursesDropdown, SourceField,
 } from './DealModalPrimitives';
 import { CompanyModal, ContactModal, CourseModal } from './DealModalMiniModals';
 import { DealModalHistoryTab } from './DealModalHistory';
@@ -140,10 +140,7 @@ export default function DealModal({
                   <input type="number" value={deal.amount || ''} onChange={e => upd({ amount: Number(e.target.value) })} placeholder="0"
                     className="w-full text-lg font-mono font-semibold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-slate-400 focus:outline-none py-0.5" />
                 </Field>
-                <Field label="Источник">
-                  <EditableSelect value={deal.source} onChange={v => upd({ source: v })}
-                    options={sourceOptions.map(s => ({ value: s, label: s }))} placeholder="Выбрать..." />
-                </Field>
+                <SourceField value={deal.source} onChange={v => upd({ source: v })} />
               </div>
 
               <Field label="Курсы">

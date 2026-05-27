@@ -21,6 +21,7 @@ type FunnelFilters = {
   managers: string[];
   sources: string[];
   tags: string[];
+  stages: string[];
   invoiceNumber: string;
   paymentDateFrom: string;
   paymentDateTo: string;
@@ -36,7 +37,7 @@ type FunnelFilters = {
 };
 
 const emptyFilters: FunnelFilters = {
-  companies: [], courses: [], managers: [], sources: [], tags: [],
+  companies: [], courses: [], managers: [], sources: [], tags: [], stages: [],
   invoiceNumber: '',
   paymentDateFrom: '', paymentDateTo: '',
   invoiceDateFrom: '', invoiceDateTo: '',
@@ -49,7 +50,7 @@ const emptyFilters: FunnelFilters = {
 function countActiveFilters(f: FunnelFilters): number {
   return (
     f.companies.length + f.courses.length + f.managers.length +
-    f.sources.length + f.tags.length +
+    f.sources.length + f.tags.length + f.stages.length +
     (f.invoiceNumber ? 1 : 0) +
     (f.paymentDateFrom || f.paymentDateTo ? 1 : 0) +
     (f.invoiceDateFrom || f.invoiceDateTo ? 1 : 0) +
@@ -110,7 +111,13 @@ export default function FunnelView({ deals, stages, companies, courses, managers
 
   const applyFilters = (deal: Deal): boolean => {
     const q = searchQuery.toLowerCase();
-    if (q && !deal.title.toLowerCase().includes(q) && !getCompanyName(deal.companyId).toLowerCase().includes(q)) return false;
+    if (q) {
+      const matchesTitle = deal.title.toLowerCase().includes(q);
+      const matchesCompany = getCompanyName(deal.companyId).toLowerCase().includes(q);
+      const matchesTags = deal.tags.some(t => t.toLowerCase().includes(q));
+      if (!matchesTitle && !matchesCompany && !matchesTags) return false;
+    }
+    if (filters.stages.length && !filters.stages.includes(deal.stageId)) return false;
     if (filters.companies.length && !filters.companies.includes(deal.companyId)) return false;
     if (filters.courses.length && !filters.courses.some(c => deal.courseIds.includes(c))) return false;
     if (filters.managers.length && !filters.managers.includes(deal.accountManagerId)) return false;
@@ -188,6 +195,13 @@ export default function FunnelView({ deals, stages, companies, courses, managers
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
             <PillGroup
+              label="Этап"
+              options={allStages.map(s => ({ value: s.id, label: s.name }))}
+              selected={filters.stages}
+              onChange={v => upd({ stages: v })}
+            />
+
+            <PillGroup
               label="Компания"
               options={companies.map(c => ({ value: c.id, label: c.name }))}
               selected={filters.companies}
@@ -195,17 +209,17 @@ export default function FunnelView({ deals, stages, companies, courses, managers
             />
 
             <PillGroup
-              label="Курсы"
-              options={courses.map(c => ({ value: c.id, label: c.name }))}
-              selected={filters.courses}
-              onChange={v => upd({ courses: v })}
-            />
-
-            <PillGroup
               label="Менеджер"
               options={managers.map(m => ({ value: m.id, label: m.name }))}
               selected={filters.managers}
               onChange={v => upd({ managers: v })}
+            />
+
+            <PillGroup
+              label="Курсы"
+              options={courses.map(c => ({ value: c.id, label: c.name }))}
+              selected={filters.courses}
+              onChange={v => upd({ courses: v })}
             />
 
             <PillGroup
@@ -243,16 +257,6 @@ export default function FunnelView({ deals, stages, companies, courses, managers
             </div>
 
             <div>
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1.5">Номер счёта</p>
-              <input
-                value={filters.invoiceNumber}
-                onChange={e => upd({ invoiceNumber: e.target.value })}
-                placeholder="Поиск по номеру..."
-                className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:border-slate-400"
-              />
-            </div>
-
-            <div>
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1.5">Сумма (₽)</p>
               <div className="flex gap-1.5 items-center">
                 <input type="number" placeholder="от" value={filters.amountMin} onChange={e => upd({ amountMin: e.target.value })}
@@ -273,6 +277,16 @@ export default function FunnelView({ deals, stages, companies, courses, managers
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1.5">Номер счёта</p>
+              <input
+                value={filters.invoiceNumber}
+                onChange={e => upd({ invoiceNumber: e.target.value })}
+                placeholder="Поиск по номеру..."
+                className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:border-slate-400"
+              />
             </div>
 
           </div>

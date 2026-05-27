@@ -176,7 +176,19 @@ export default function Index() {
 
   const openDeal = (dealId: string) => {
     const d = deals.find(x => x.id === dealId);
-    if (d) { setSelectedDeal(d); setView('funnel'); }
+    if (d) setSelectedDeal(d);
+  };
+
+  const openContact = (contactId: string) => {
+    const c = contacts.find(x => x.id === contactId);
+    if (c) setSearchQuery(c.fullName);
+    setView('contacts');
+  };
+
+  const openCompany = (companyId: string) => {
+    const c = companies.find(x => x.id === companyId);
+    if (c) setSearchQuery(c.name);
+    setView('companies');
   };
 
   const navItems: { id: View; label: string; icon: string }[] = [
@@ -231,7 +243,7 @@ export default function Index() {
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Поиск..."
+                placeholder="Поиск по сделкам, компаниям, контактам..."
                 className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white placeholder-slate-400 focus:outline-none focus:border-slate-400 transition-colors"
               />
             </div>
@@ -324,12 +336,15 @@ export default function Index() {
         {view === 'companies' && (
           <CompaniesView companies={companies} contacts={contacts} deals={deals} searchQuery={searchQuery}
             onAddCompany={d => { handleAddCompany(d); }} onEditCompany={handleEditCompany}
-            onDeleteCompany={handleDeleteCompany} />
+            onDeleteCompany={handleDeleteCompany}
+            onContactClick={openContact}
+            onDealClick={d => setSelectedDeal(d)} />
         )}
         {view === 'contacts' && (
           <ContactsView contacts={contacts} companies={companies} deals={deals} searchQuery={searchQuery}
             onAddContact={d => { handleAddContact(d); }} onEditContact={handleEditContact}
-            onDeleteContact={handleDeleteContact} />
+            onDeleteContact={handleDeleteContact}
+            onCompanyClick={openCompany} />
         )}
         {view === 'managers' && (
           <ManagersView managers={managers} deals={deals}

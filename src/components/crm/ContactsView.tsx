@@ -10,6 +10,7 @@ interface ContactsViewProps {
   onAddContact: (c: Omit<Contact, 'id'>) => void;
   onEditContact: (c: Contact) => void;
   onDeleteContact?: (id: string) => void;
+  onCompanyClick?: (companyId: string) => void;
 }
 
 function ContactModal({ contact, companies, onClose, onSave }: {
@@ -26,6 +27,7 @@ function ContactModal({ contact, companies, onClose, onSave }: {
     position: contact?.position ?? '',
     isDecisionMaker: contact?.isDecisionMaker ?? false,
     companyId: contact?.companyId ?? '',
+    telegram: contact?.telegram ?? '',
   });
 
   const phoneTypes = ['Рабочий', 'Личный', 'Мобильный', 'Другой'];
@@ -153,6 +155,20 @@ function ContactModal({ contact, companies, onClose, onSave }: {
               ))}
             </div>
           </div>
+
+          {/* Telegram */}
+          <div>
+            <label className={lbl}>Telegram</label>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-sm flex-shrink-0">@</span>
+              <input
+                value={form.telegram ?? ''}
+                onChange={e => setForm(p => ({ ...p, telegram: e.target.value.replace(/^@/, '') }))}
+                placeholder="username"
+                className={`${inp} flex-1`}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-2 px-5 pb-5 flex-shrink-0">
@@ -169,7 +185,7 @@ function ContactModal({ contact, companies, onClose, onSave }: {
   );
 }
 
-export default function ContactsView({ contacts, companies, deals, searchQuery, onAddContact, onEditContact, onDeleteContact }: ContactsViewProps) {
+export default function ContactsView({ contacts, companies, deals, searchQuery, onAddContact, onEditContact, onDeleteContact, onCompanyClick }: ContactsViewProps) {
   const [modal, setModal] = useState<Contact | null | 'new'>(null);
   const [filterCompany, setFilterCompany] = useState('all');
   const [filterDM, setFilterDM] = useState('all');
@@ -180,7 +196,7 @@ export default function ContactsView({ contacts, companies, deals, searchQuery, 
 
   const filtered = contacts.filter(c => {
     const q = searchQuery.toLowerCase();
-    if (q && !c.fullName.toLowerCase().includes(q) && !c.position.toLowerCase().includes(q)) return false;
+    if (q && !c.fullName.toLowerCase().includes(q) && !c.position.toLowerCase().includes(q) && !getCompanyName(c.companyId).toLowerCase().includes(q)) return false;
     if (filterCompany !== 'all' && c.companyId !== filterCompany) return false;
     if (filterDM === 'yes' && !c.isDecisionMaker) return false;
     if (filterDM === 'no' && c.isDecisionMaker) return false;
@@ -230,7 +246,12 @@ export default function ContactsView({ contacts, companies, deals, searchQuery, 
                 className="border-b border-slate-50 hover:bg-slate-50 transition-colors animate-fade-in"
               >
                 <td className="px-4 py-2.5 font-medium text-slate-900 cursor-pointer" onClick={() => setModal(c)}>{c.fullName}</td>
-                <td className="px-4 py-2.5 text-slate-600 hidden md:table-cell cursor-pointer" onClick={() => setModal(c)}>{getCompanyName(c.companyId)}</td>
+                <td className="px-4 py-2.5 hidden md:table-cell">
+                  {c.companyId && onCompanyClick
+                    ? <button onClick={() => onCompanyClick(c.companyId)} className="text-slate-600 hover:text-slate-900 hover:underline transition-colors text-left">{getCompanyName(c.companyId)}</button>
+                    : <span className="text-slate-600">{getCompanyName(c.companyId)}</span>
+                  }
+                </td>
                 <td className="px-4 py-2.5 text-slate-500 hidden md:table-cell cursor-pointer" onClick={() => setModal(c)}>{c.position || '—'}</td>
                 <td className="px-4 py-2.5 text-slate-600 cursor-pointer" onClick={() => setModal(c)}>
                   {c.phones[0]?.value ?? '—'}

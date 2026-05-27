@@ -93,8 +93,23 @@ export default function TasksView({ deals, companies, onUpdateDeal, onDealClick 
     onUpdateDeal({ ...deal, history: updatedHistory });
   }
 
-  function handleToggleDone(task: FlatTask) {
+  function handleToggleDone(task: FlatTask, duplicateDate?: string) {
     updateTask(task, { done: !task.done });
+    if (!task.done && duplicateDate) {
+      const deal = deals.find(d => d.id === task.dealId);
+      if (!deal) return;
+      const newTask: HistoryTask = {
+        id: `h${Date.now()}`,
+        type: 'task',
+        text: task.text,
+        author: task.author,
+        createdAt: new Date().toISOString(),
+        dueAt: duplicateDate,
+        done: false,
+        priority: task.priority,
+      };
+      onUpdateDeal({ ...deal, history: [...deal.history, newTask] });
+    }
   }
 
   function handleSaveEdit(task: FlatTask, form: EditForm) {

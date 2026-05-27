@@ -1,6 +1,76 @@
 import { useState, useRef, useEffect } from 'react';
-import { Course } from '@/data/crm';
+import { Course, sourceOptions as defaultSourceOptions } from '@/data/crm';
 import Icon from '@/components/ui/icon';
+
+const CUSTOM_SOURCES_KEY = 'crm_custom_sources';
+function getCustomSources(): string[] {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_SOURCES_KEY) ?? '[]'); } catch { return []; }
+}
+function saveCustomSources(arr: string[]) {
+  localStorage.setItem(CUSTOM_SOURCES_KEY, JSON.stringify(arr));
+}
+
+export function SourceField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [custom, setCustom] = useState<string[]>(getCustomSources);
+  const [adding, setAdding] = useState(false);
+  const [newVal, setNewVal] = useState('');
+  const allOptions = [...defaultSourceOptions, ...custom];
+
+  const addSource = () => {
+    const v = newVal.trim();
+    if (!v || allOptions.includes(v)) { setAdding(false); setNewVal(''); return; }
+    const updated = [...custom, v];
+    setCustom(updated);
+    saveCustomSources(updated);
+    onChange(v);
+    setAdding(false);
+    setNewVal('');
+  };
+
+  const removeCustom = (s: string) => {
+    const updated = custom.filter(x => x !== s);
+    setCustom(updated);
+    saveCustomSources(updated);
+    if (value === s) onChange('');
+  };
+
+  return (
+    <div>
+      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">Источник</p>
+      <div className="flex items-center gap-1">
+        <select value={value} onChange={e => onChange(e.target.value)} className={`${inpCls} appearance-none cursor-pointer flex-1`}>
+          <option value="">Выбрать...</option>
+          {allOptions.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <button type="button" onClick={() => setAdding(p => !p)} title="Добавить источник"
+          className="flex-shrink-0 text-slate-400 hover:text-slate-700 transition-colors">
+          <Icon name="Plus" size={13} />
+        </button>
+      </div>
+      {adding && (
+        <div className="flex gap-1.5 mt-1.5">
+          <input value={newVal} onChange={e => setNewVal(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSource(); } }}
+            placeholder="Новый источник"
+            autoFocus
+            className="flex-1 text-xs px-2 py-1 border border-slate-200 rounded-md focus:outline-none focus:border-slate-400 bg-white" />
+          <button type="button" onClick={addSource} className="text-xs px-2 py-1 bg-slate-900 text-white rounded-md hover:bg-slate-700">OK</button>
+          <button type="button" onClick={() => { setAdding(false); setNewVal(''); }} className="text-xs px-2 py-1 border border-slate-200 rounded-md text-slate-500 hover:border-slate-400">✕</button>
+        </div>
+      )}
+      {custom.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {custom.map(s => (
+            <span key={s} className="flex items-center gap-0.5 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">
+              {s}
+              <button onClick={() => removeCustom(s)} className="text-slate-400 hover:text-rose-500 transition-colors ml-0.5"><Icon name="X" size={8} /></button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function formatDt(iso: string) {
   if (!iso) return '';

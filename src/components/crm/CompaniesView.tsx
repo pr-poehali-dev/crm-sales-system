@@ -10,14 +10,18 @@ interface CompaniesViewProps {
   onAddCompany: (c: Omit<Company, 'id'>) => void;
   onEditCompany: (c: Company) => void;
   onDeleteCompany?: (id: string) => void;
+  onContactClick?: (contactId: string) => void;
+  onDealClick?: (deal: Deal) => void;
 }
 
-function CompanyModal({ company, contacts, deals, onClose, onSave }: {
+function CompanyModal({ company, contacts, deals, onClose, onSave, onContactClick, onDealClick }: {
   company: Company | null;
   contacts: Contact[];
   deals: Deal[];
   onClose: () => void;
   onSave: (c: Omit<Company, 'id'> & { id?: string }) => void;
+  onContactClick?: (id: string) => void;
+  onDealClick?: (deal: Deal) => void;
 }) {
   const [form, setForm] = useState<Omit<Company, 'id'> & { id?: string }>({
     id: company?.id,
@@ -105,9 +109,12 @@ function CompanyModal({ company, contacts, deals, onClose, onSave }: {
                   <p className={lbl}>Контакты ({companyContacts.length})</p>
                   <div className="space-y-1">
                     {companyContacts.map(c => (
-                      <div key={c.id} className="flex items-center gap-2 text-sm text-slate-700">
-                        <Icon name="User" size={12} className="text-slate-400" />
-                        {c.fullName}
+                      <div key={c.id} className="flex items-center gap-2 text-sm">
+                        <Icon name="User" size={12} className="text-slate-400 flex-shrink-0" />
+                        {onContactClick
+                          ? <button onClick={() => { onContactClick(c.id); onClose(); }} className="text-slate-700 hover:text-slate-900 hover:underline transition-colors text-left">{c.fullName}</button>
+                          : <span className="text-slate-700">{c.fullName}</span>
+                        }
                         {c.isDecisionMaker && <span className="text-[10px] text-emerald-600">ЛПР</span>}
                       </div>
                     ))}
@@ -119,9 +126,12 @@ function CompanyModal({ company, contacts, deals, onClose, onSave }: {
                   <p className={lbl}>Сделки ({companyDeals.length})</p>
                   <div className="space-y-1">
                     {companyDeals.map(d => (
-                      <div key={d.id} className="text-sm text-slate-700 flex items-center gap-2">
-                        <Icon name="Briefcase" size={12} className="text-slate-400" />
-                        {d.title}
+                      <div key={d.id} className="text-sm flex items-center gap-2">
+                        <Icon name="Briefcase" size={12} className="text-slate-400 flex-shrink-0" />
+                        {onDealClick
+                          ? <button onClick={() => { onDealClick(d); onClose(); }} className="text-slate-700 hover:text-slate-900 hover:underline transition-colors text-left">{d.title}</button>
+                          : <span className="text-slate-700">{d.title}</span>
+                        }
                       </div>
                     ))}
                   </div>
@@ -145,7 +155,7 @@ function CompanyModal({ company, contacts, deals, onClose, onSave }: {
   );
 }
 
-export default function CompaniesView({ companies, contacts, deals, searchQuery, onAddCompany, onEditCompany, onDeleteCompany }: CompaniesViewProps) {
+export default function CompaniesView({ companies, contacts, deals, searchQuery, onAddCompany, onEditCompany, onDeleteCompany, onContactClick, onDealClick }: CompaniesViewProps) {
   const [modal, setModal] = useState<Company | null | 'new'>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -241,6 +251,8 @@ export default function CompaniesView({ companies, contacts, deals, searchQuery,
             if (data.id) onEditCompany(data as Company);
             else onAddCompany(data);
           }}
+          onContactClick={onContactClick}
+          onDealClick={onDealClick}
         />
       )}
     </div>

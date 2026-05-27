@@ -46,7 +46,7 @@ export default function DealsView({ deals, companies, contacts, managers, course
   const filtered = deals
     .filter(d => {
       const q = searchQuery.toLowerCase();
-      if (q && !d.title.toLowerCase().includes(q) && !getCompanyName(d.companyId).toLowerCase().includes(q)) return false;
+      if (q && !d.title.toLowerCase().includes(q) && !getCompanyName(d.companyId).toLowerCase().includes(q) && !d.tags.some(t => t.toLowerCase().includes(q))) return false;
       if (filters.stage !== 'all' && d.stageId !== filters.stage) return false;
       if (filters.taskPriority !== 'all' && getTopTaskPriority(d) !== filters.taskPriority) return false;
       if (filters.source !== 'all' && d.source !== filters.source) return false;

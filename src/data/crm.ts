@@ -45,6 +45,7 @@ export type Contact = {
   position: string;
   isDecisionMaker: boolean;
   companyId: string;
+  telegram?: string;
 };
 
 // ─── History ───────────────────────────────────────────────────────────────
