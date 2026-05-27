@@ -349,11 +349,9 @@ export default function AddDealModal({ defaultStageId, funnelId, funnelStages, c
             {/* Contacts */}
             <div>
               <label className={lbl}>Контакты</label>
-              {localContacts.length === 0 ? (
-                <p className="text-xs text-slate-400 mb-1">Нет контактов</p>
-              ) : (
+              {companyContacts.length > 0 && (
                 <div className="space-y-1 mb-1 max-h-36 overflow-y-auto">
-                  {(form.companyId ? companyContacts : localContacts).map(c => (
+                  {companyContacts.map(c => (
                     <label key={c.id} className="flex items-center gap-2 cursor-pointer group">
                       <div onClick={() => toggleContact(c.id)}
                         className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${form.contactIds.includes(c.id) ? 'bg-slate-900 border-slate-900' : 'border-slate-300 group-hover:border-slate-500'}`}>
@@ -361,11 +359,6 @@ export default function AddDealModal({ defaultStageId, funnelId, funnelStages, c
                       </div>
                       <span className="text-sm text-slate-700">{c.fullName}</span>
                       {c.isDecisionMaker && <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1 rounded">ЛПР</span>}
-                      {!form.companyId && c.companyId && (
-                        <span className="text-[10px] text-slate-400 ml-auto">
-                          {localCompanies.find(co => co.id === c.companyId)?.name ?? ''}
-                        </span>
-                      )}
                     </label>
                   ))}
                 </div>
