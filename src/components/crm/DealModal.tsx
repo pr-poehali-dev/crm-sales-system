@@ -61,7 +61,7 @@ export default function DealModal({
 
   const activeTasks = deal.history.filter(h => h.type === 'task' && !(h as { done: boolean }).done);
   const historyItemCount = deal.history.length;
-  const visibleContacts = contacts.filter(c => c.companyId === deal.companyId || deal.contactIds.includes(c.id));
+  const visibleContacts = contacts.filter(c => deal.contactIds.includes(c.id) || (deal.companyId && c.companyId === deal.companyId));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
