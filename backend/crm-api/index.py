@@ -89,12 +89,12 @@ def handler(event: dict, context) -> dict:
             for r in rows:
                 w.writerow([
                     r["id"], r["title"], r["stage_id"], r["amount"], r["source"],
-                    ",".join(r["course_ids"] or []),
+                    ",".join([x for x in (r["course_ids"] or []) if x is not None]),
                     r["student_count"], r["start_date"], r["end_date"],
                     r["account_manager_id"], r["invoice_number"],
                     r["invoice_date"], r["payment_date"], r["company_id"],
-                    ",".join(r["contact_ids"] or []),
-                    ",".join(r["tags"] or []),
+                    ",".join([x for x in (r["contact_ids"] or []) if x is not None]),
+                    ",".join([x for x in (r["tags"] or []) if x is not None]),
                     r["created_at"], r["company_name"], r["manager_name"],
                 ])
             return {
